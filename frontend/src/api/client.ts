@@ -1,0 +1,195 @@
+export interface Vault {
+  id: string;
+  contract_id: string;
+  owner_id: string;
+  network: string;
+  is_frozen: boolean;
+  policy_version: number;
+  per_tx_cap_near: number;
+  daily_budget_near: number;
+  daily_spent_near: number;
+  require_whitelist: boolean;
+  max_risk_for_autonomous: number;
+  policy_signer_pk: string;
+  vault_balance_near: number;
+  reserved_balance_near: number;
+  allowed_recipients: string[];
+}
+
+export interface Agent {
+  id: string;
+  vault_id: string;
+  account_id: string;
+  name: string;
+  trust_score: number;
+  authority_level: number;
+  is_active: boolean;
+  last_heartbeat: number;
+}
+
+export interface PaymentRequest {
+  id: string;
+  vault_id: string;
+  agent_id: string;
+  request_id: string;
+  recipient: string;
+  amount_near: number;
+  amount_yocto: string;
+  risk_score: number;
+  authority_level: number;
+  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected';
+  reason?: string;
+  tx_hash?: string;
+  created_at: number;
+  expiry_ns: string;
+  resolved_at?: number;
+  task_evidence: {
+    prompt: string;
+    evidence_hash: string;
+    completion_summary: string;
+  };
+}
+
+export interface RiskEvaluation {
+  request_id: string;
+  agent_id: string;
+  recipient: string;
+  amount_near: number;
+  composite_risk: number;
+  components: {
+    amount_risk: number;
+    velocity_risk: number;
+    recipient_risk: number;
+    evidence_risk: number;
+    failure_risk: number;
+  };
+  reasons: string[];
+  authority_level: number;
+  authority_name: string;
+  requires_owner_approval: boolean;
+  is_blocked: boolean;
+  new_trust_score: number;
+  feature_snapshot: Record<string, unknown>;
+  evaluated_at: number;
+}
+
+export interface AuditEvent {
+  id: string;
+  event_type: string;
+  actor: string;
+  target_id?: string;
+  details: Record<string, unknown>;
+  tx_hash?: string;
+  timestamp: number;
+}
+
+const API_BASE = '/api';
+
+export const api = {
+  async getHealth() {
+    const res = await fetch(`${API_BASE}/health`);
+    return res.json();
+  },
+
+  async getVault(id: string = 'vault-01'): Promise<Vault> {
+    const res = await fetch(`${API_BASE}/vaults/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch vault');
+    return res.json();
+  },
+
+  async getAgents(): Promise<Agent[]> {
+    const res = await fetch(`${API_BASE}/agents`);
+    if (!res.ok) throw new Error('Failed to fetch agents');
+    return res.json();
+  },
+
+  async getPaymentRequests(status?: string): Promise<PaymentRequest[]> {
+    const url = status && status !== 'all'
+      ? `${API_BASE}/payment-requests?status=${status}`
+      : `${API_BASE}/payment-requests`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch requests');
+    return res.json();
+  },
+
+  async getPaymentRequestDetails(id: string): Promise<{ request: PaymentRequest; evaluation?: RiskEvaluation }> {
+    const res = await fetch(`${API_BASE}/payment-requests/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch request details');
+    return res.json();
+  },
+
+  async approveRequest(id: string): Promise<{ success: boolean; request: PaymentRequest }> {
+    const res = await fetch(`${API_BASE}/approvals/${id}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to approve request');
+    }
+    return res.json();
+  },
+
+  async rejectRequest(id: string, reason: string): Promise<{ success: boolean; request: PaymentRequest }> {
+    const res = await fetch(`${API_BASE}/approvals/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to reject request');
+    }
+    return res.json();
+  },
+
+  async freezeAgent(agentId: string = 'agent-01', reason?: string) {
+    const res = await fetch(`${API_BASE}/agents/${agentId}/freeze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return res.json();
+  },
+
+  async unfreezeAgent(agentId: string = 'agent-01') {
+    const res = await fetch(`${API_BASE}/agents/${agentId}/unfreeze`, {
+      method: 'POST',
+    });
+    return res.json();
+  },
+
+  async updatePolicy(policy: {
+    perTxCapNear?: number;
+    dailyBudgetNear?: number;
+    requireWhitelist?: boolean;
+    maxRiskForAutonomous?: number;
+  }) {
+    const res = await fetch(`${API_BASE}/policies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(policy),
+    });
+    return res.json();
+  },
+
+  async runScenario(scenario: 'routine' | 'spike' | 'injection') {
+    const res = await fetch(`${API_BASE}/scenarios/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scenario }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Scenario run failed');
+    }
+    return res.json();
+  },
+
+  async getEvents(limit: number = 50): Promise<AuditEvent[]> {
+    const res = await fetch(`${API_BASE}/events?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch events');
+    return res.json();
+  },
+};
+
