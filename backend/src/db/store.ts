@@ -1,6 +1,18 @@
-import { v4 as uuidv4 } from 'uuid';
-import { PaymentProposal, RiskEvaluationResult, AuthorityLevel } from '../risk/engine';
+/**
+ * Data layer.
+ *
+ *  - `store` is an in-memory cache of vault state. In testnet mode it is refreshed
+ *    from the vault contract on every use, so it never needs persisting.
+ *  - `repo` holds everything that must survive restarts and serverless cold starts:
+ *    agent trust, payment requests, risk evaluations and the append-only audit log.
+ *    It is backed by Supabase when SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY are set,
+ *    otherwise by memory (tests, local simulation).
+ */
+import { RiskEvaluationResult, AuthorityLevel } from '../risk/engine';
 import { REFERENCE, scaled } from '../demo';
+import { MemoryRepository } from './memory-repo';
+import { SupabaseRepository } from './supabase-repo';
+import { DEFAULT_VAULT_ID } from './defaults';
 
 export interface StoredVault {
   id: string;
@@ -32,6 +44,8 @@ export interface StoredAgent {
   last_heartbeat: number;
 }
 
+export type RequestStatus = 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected' | 'expired';
+
 export interface StoredRequest {
   id: string;
   vault_id: string;
@@ -42,7 +56,7 @@ export interface StoredRequest {
   amount_yocto: string;
   risk_score: number;
   authority_level: AuthorityLevel;
-  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected' | 'expired';
+  status: RequestStatus;
   reason?: string;
   tx_hash?: string;
   /** 'testnet' = outcome read from the vault contract; 'simulation' = nothing was broadcast. */
@@ -73,23 +87,38 @@ export interface StoredAuditEvent {
   timestamp: number;
 }
 
-export class MemoryStore {
+export interface ListRequestsOptions {
+  agentId?: string;
+  statuses?: RequestStatus[];
+  chainMode?: StoredRequest['chain_mode'];
+  limit?: number;
+}
+
+export interface Repository {
+  readonly kind: 'memory' | 'supabase';
+  getAgent(id: string): Promise<StoredAgent | undefined>;
+  listAgents(): Promise<StoredAgent[]>;
+  saveAgent(agent: StoredAgent): Promise<void>;
+  /** Newest first. */
+  listRequests(opts?: ListRequestsOptions): Promise<StoredRequest[]>;
+  getRequest(idOrRequestId: string): Promise<StoredRequest | undefined>;
+  saveRequest(req: StoredRequest): Promise<void>;
+  saveRiskEvaluation(evaluation: RiskEvaluationResult): Promise<void>;
+  getRiskEvaluation(requestId: string): Promise<RiskEvaluationResult | undefined>;
+  logAudit(eventType: string, actor: string, targetId?: string, details?: Record<string, unknown>, txHash?: string): Promise<void>;
+  /** Newest first. */
+  getAuditEvents(limit?: number): Promise<StoredAuditEvent[]>;
+}
+
+export { DEFAULT_VAULT_ID, DEFAULT_AGENT_ID, defaultAgent } from './defaults';
+
+/** In-memory vault state cache (refreshed from chain in testnet mode). */
+export class VaultCache {
   public vaults: Map<string, StoredVault> = new Map();
-  public agents: Map<string, StoredAgent> = new Map();
-  public requests: Map<string, StoredRequest> = new Map();
-  public riskEvaluations: Map<string, RiskEvaluationResult> = new Map();
-  public auditEvents: StoredAuditEvent[] = [];
 
   constructor() {
-    this.seedDefaults();
-  }
-
-  private seedDefaults() {
-    const vaultId = 'vault-01';
-    const agentId = 'agent-01';
-
     const vault: StoredVault = {
-      id: vaultId,
+      id: DEFAULT_VAULT_ID,
       contract_id: process.env.VAULT_CONTRACT_ID || 'throttle-vault.testnet',
       owner_id: process.env.OWNER_ACCOUNT_ID || 'throttle-owner.testnet',
       network: 'testnet',
@@ -106,85 +135,30 @@ export class MemoryStore {
       // In testnet mode this is replaced by the vault's on-chain whitelist on every sync.
       allowed_recipients: [process.env.RECIPIENT_ACCOUNT_ID || 'service-worker.testnet', 'oracle-node.testnet'],
     };
-    this.vaults.set(vaultId, vault);
-
-    const agent: StoredAgent = {
-      id: agentId,
-      vault_id: vaultId,
-      account_id: process.env.AGENT_ACCOUNT_ID || 'throttle-agent.testnet',
-      name: 'Autonomous Task Paying Agent',
-      trust_score: 82.5,
-      authority_level: 1,
-      is_active: true,
-      last_heartbeat: Date.now(),
-    };
-    this.agents.set(agentId, agent);
-
-    this.logAudit('VaultInitialized', 'system', vaultId, {
-      owner_id: vault.owner_id,
-      contract_id: vault.contract_id,
-      per_tx_cap: vault.per_tx_cap_near,
-    });
+    this.vaults.set(vault.id, vault);
   }
 
   public getVault(id: string): StoredVault | undefined {
     return this.vaults.get(id);
   }
-
-  public getAgent(id: string): StoredAgent | undefined {
-    return this.agents.get(id);
-  }
-
-  public listAgents(): StoredAgent[] {
-    return Array.from(this.agents.values());
-  }
-
-  public listRequests(): StoredRequest[] {
-    return Array.from(this.requests.values()).sort((a, b) => b.created_at - a.created_at);
-  }
-
-  public getRequest(idOrRequestId: string): StoredRequest | undefined {
-    for (const req of this.requests.values()) {
-      if (req.id === idOrRequestId || req.request_id === idOrRequestId) {
-        return req;
-      }
-    }
-    return undefined;
-  }
-
-  public saveRequest(req: StoredRequest) {
-    this.requests.set(req.id, req);
-  }
-
-  public saveRiskEvaluation(evaluation: RiskEvaluationResult) {
-    this.riskEvaluations.set(evaluation.request_id, evaluation);
-  }
-
-  public logAudit(
-    event_type: string,
-    actor: string,
-    target_id?: string,
-    details: Record<string, unknown> = {},
-    tx_hash?: string
-  ) {
-    const event: StoredAuditEvent = {
-      id: uuidv4(),
-      event_type,
-      actor,
-      target_id,
-      details,
-      tx_hash,
-      timestamp: Date.now(),
-    };
-    this.auditEvents.unshift(event);
-    if (this.auditEvents.length > 500) {
-      this.auditEvents.pop();
-    }
-  }
-
-  public getAuditEvents(limit: number = 50): StoredAuditEvent[] {
-    return this.auditEvents.slice(0, limit);
-  }
 }
 
-export const store = new MemoryStore();
+export type StoreMode = 'memory' | 'supabase';
+
+export function getStoreMode(): StoreMode {
+  if (process.env.STORE_MODE === 'memory') return 'memory';
+  const configured = !!process.env.SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (process.env.STORE_MODE === 'supabase' && !configured) {
+    throw new Error('STORE_MODE=supabase but SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are missing.');
+  }
+  return configured ? 'supabase' : 'memory';
+}
+
+function createRepository(): Repository {
+  return getStoreMode() === 'supabase'
+    ? new SupabaseRepository(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+    : new MemoryRepository();
+}
+
+export const store = new VaultCache();
+export const repo: Repository = createRepository();

@@ -2,7 +2,7 @@
  * Mirrors on-chain vault state into the local store and reconciles open requests.
  * Only used in testnet mode; reads are safe to repeat and never re-broadcast anything.
  */
-import { store, StoredRequest, StoredVault } from '../db/store';
+import { repo, store, StoredRequest, StoredVault } from '../db/store';
 import { getAllowedRecipients, getNearConfig, getOnchainRequest, getVaultStatus, OnchainRequest, yoctoToNear } from './client';
 
 export function mapOnchainStatus(req: OnchainRequest, nowMs: number = Date.now()): StoredRequest['status'] {
@@ -53,9 +53,7 @@ export async function syncVaultFromChain(vaultId: string): Promise<StoredVault> 
 
 /** Re-reads every open testnet request from the vault and updates its local status. */
 export async function reconcileOpenRequests(): Promise<number> {
-  const open = store
-    .listRequests()
-    .filter((r) => r.chain_mode === 'testnet' && (r.status === 'pending_approval' || r.status === 'executing'));
+  const open = await repo.listRequests({ chainMode: 'testnet', statuses: ['pending_approval', 'executing'], limit: 25 });
   let changed = 0;
   for (const req of open) {
     changed += (await reconcileRequest(req)) ? 1 : 0;
@@ -67,13 +65,13 @@ export async function reconcileRequest(req: StoredRequest): Promise<boolean> {
   const onchain = await getOnchainRequest(req.request_id);
   req.last_synced_at = Date.now();
   if (!onchain) {
-    store.saveRequest(req);
+    await repo.saveRequest(req);
     return false;
   }
   if (onchain.status === 'PendingApproval') req.expiry_ns = onchain.expiry_ns;
   const next = mapOnchainStatus(onchain);
   if (next === req.status) {
-    store.saveRequest(req);
+    await repo.saveRequest(req);
     return false;
   }
   const previous = req.status;
@@ -81,8 +79,8 @@ export async function reconcileRequest(req: StoredRequest): Promise<boolean> {
   if (onchain.failure_reason) req.chain_reason = onchain.failure_reason;
   if (previous === 'pending_approval' && next !== 'expired') req.decided_by = 'owner';
   if (onchain.resolved_at_ns) req.resolved_at = Number(BigInt(onchain.resolved_at_ns) / 1_000_000n);
-  store.saveRequest(req);
-  store.logAudit('RequestReconciledFromChain', 'reconciler', req.request_id, {
+  await repo.saveRequest(req);
+  await repo.logAudit('RequestReconciledFromChain', 'reconciler', req.request_id, {
     from: previous,
     to: next,
     onchain_status: onchain.status,

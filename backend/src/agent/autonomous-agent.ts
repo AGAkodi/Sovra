@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { RiskEngine, PaymentProposal, RiskEvaluationResult } from '../risk/engine';
 import { AttestationSigner } from '../risk/attestation';
-import { store, StoredRequest } from '../db/store';
+import { repo, store, StoredRequest } from '../db/store';
 import { getChainMode, getNearConfig, submitPaymentRequest, ChainSubmission } from '../near/client';
 import { syncVaultFromChain, mapOnchainStatus } from '../near/sync';
 
@@ -41,7 +41,7 @@ export class AutonomousTaskAgent {
 
   public async processTaskPayment(job: TaskJob): Promise<TaskPaymentResult> {
     const mode = getChainMode();
-    const agent = store.getAgent(this.agentId);
+    const agent = await repo.getAgent(this.agentId);
     if (!agent) throw new Error(`Agent ${this.agentId} not found`);
 
     // In testnet mode the vault contract is the source of truth for freeze state and
@@ -76,7 +76,7 @@ export class AutonomousTaskAgent {
       policy_version: vault.policy_version,
     };
 
-    const pastRequests = store.listRequests().filter((r) => r.agent_id === agent.id);
+    const pastRequests = await repo.listRequests({ agentId: agent.id });
     const evaluation = this.riskEngine.evaluateProposal(proposal, {
       successful_payments: pastRequests
         .filter((r) => r.status === 'succeeded')
@@ -89,12 +89,12 @@ export class AutonomousTaskAgent {
       last_activity_timestamp: agent.last_heartbeat,
       is_frozen: vault.is_frozen,
     });
-    store.saveRiskEvaluation(evaluation);
+    await repo.saveRiskEvaluation(evaluation);
 
     agent.trust_score = evaluation.new_trust_score;
     agent.authority_level = evaluation.authority_level;
     agent.last_heartbeat = now;
-    store.agents.set(agent.id, agent);
+    await repo.saveAgent(agent);
 
     // Every decision is signed, including level 5 and 6: the vault enforces it and
     // records refusals on-chain, so blocked requests leave verifiable evidence.
@@ -144,8 +144,8 @@ export class AutonomousTaskAgent {
         : this.applySimulation(base, evaluation, vault.id);
 
     request.last_synced_at = Date.now();
-    store.saveRequest(request);
-    store.logAudit(auditEventFor(request), agent.account_id, requestId, {
+    await repo.saveRequest(request);
+    await repo.logAudit(auditEventFor(request), agent.account_id, requestId, {
       chain_mode: request.chain_mode,
       decided_by: request.decided_by,
       status: request.status,

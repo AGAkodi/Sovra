@@ -97,7 +97,8 @@ export interface Health {
   policy_signer_ephemeral: boolean;
 }
 
-const API_BASE = '/api';
+// Local dev: Vite proxies /api to the backend. Hosted: set VITE_API_BASE to the backend URL.
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/$/, '');
 
 export const api = {
   async getHealth(): Promise<Health> {

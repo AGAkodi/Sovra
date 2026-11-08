@@ -12,6 +12,7 @@
     "keygen": "ts-node src/scripts/keygen.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -25,9 +26,9 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.7",
     "@types/uuid": "^10.0.0",
+    "pg": "^8.23.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.3",
     "vitest": "^3.0.4"
   }
 }
-

@@ -30,7 +30,8 @@ const { AutonomousTaskAgent } = await import('../src/agent/autonomous-agent');
 const { RiskEngine } = await import('../src/risk/engine');
 const { AttestationSigner } = await import('../src/risk/attestation');
 const { ChainUnavailableError } = await import('../src/near/client');
-const { store } = await import('../src/db/store');
+const { repo } = await import('../src/db/store');
+const { MemoryRepository } = await import('../src/db/memory-repo');
 
 const NEAR = '000000000000000000000000';
 function chainVault(overrides: Partial<OnchainVaultStatus> = {}): OnchainVaultStatus {
@@ -72,7 +73,7 @@ describe('Testnet chain path (RPC mocked)', () => {
   let agent: InstanceType<typeof AutonomousTaskAgent>;
 
   beforeEach(() => {
-    store.requests.clear();
+    (repo as InstanceType<typeof MemoryRepository>).reset();
     submitMock.mockReset();
     vaultStatusMock.mockReset();
     vaultStatusMock.mockResolvedValue(chainVault());
