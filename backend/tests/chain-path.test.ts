@@ -26,7 +26,13 @@ vi.mock('../src/near/client', async (importOriginal) => {
   };
 });
 
-const { AutonomousTaskAgent } = await import('../src/agent/autonomous-agent');
+const interpretMock = vi.fn();
+vi.mock('../src/agent/llm', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/agent/llm')>();
+  return { ...actual, interpretTask: (t: import('../src/agent/llm').TaskForInterpretation) => interpretMock(t) ?? actual.interpretTask(t) };
+});
+
+const { AutonomousTaskAgent, AgentDeclinedError } = await import('../src/agent/autonomous-agent');
 const { RiskEngine } = await import('../src/risk/engine');
 const { AttestationSigner } = await import('../src/risk/attestation');
 const { ChainUnavailableError } = await import('../src/near/client');
@@ -77,6 +83,8 @@ describe('Testnet chain path (RPC mocked)', () => {
     submitMock.mockReset();
     vaultStatusMock.mockReset();
     vaultStatusMock.mockResolvedValue(chainVault());
+    interpretMock.mockReset();
+    interpretMock.mockReturnValue(undefined); // default: real interpreter (scripted under test)
     agent = new AutonomousTaskAgent('agent-01', new RiskEngine(['service-worker.testnet'], 30, 100), signer);
   });
 
@@ -171,6 +179,23 @@ describe('Testnet chain path (RPC mocked)', () => {
     submitMock.mockResolvedValue({ outcome: 'refused', tx_hash: 'TXZ', reason: 'Vault is frozen' });
     const r = await agent.processTaskPayment(routineJob);
     expect(r.riskEvaluation.reasons).toContain('VAULT_OR_AGENT_FROZEN');
+    expect(r.requestStatus).toBe('rejected');
+  });
+
+  it('submits nothing when the LLM declines an ordinary task', async () => {
+    interpretMock.mockResolvedValue({ recipient: 'service-worker.testnet', amount_near: 3, rationale: 'x', task_category: 'declined', mode: 'llm', declined: true, decline_reason: "I'm sorry" });
+    await expect(agent.processTaskPayment(routineJob)).rejects.toBeInstanceOf(AgentDeclinedError);
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it('compromised-agent simulation submits the attack anyway so the vault is exercised', async () => {
+    interpretMock.mockResolvedValue({ recipient: 'attacker.testnet', amount_near: 80, rationale: 'x', task_category: 'declined', mode: 'llm', declined: true, decline_reason: "I'm sorry" });
+    submitMock.mockResolvedValue({ outcome: 'rejected', tx_hash: 'TXV', reason: 'exceeds per_tx_cap' });
+    const r = await agent.processTaskPayment({ ...routineJob, proposedPayee: 'attacker-probe.testnet', proposedAmountNear: 80, simulateCompromisedAgent: true });
+    expect(submitMock).toHaveBeenCalledOnce();
+    expect(submitMock.mock.calls[0][0].recipient).toBe('attacker-probe.testnet');
+    expect(r.agent.mode).toBe('scripted');
+    expect(r.agent.fallback_reason).toMatch(/Compromised-agent simulation/);
     expect(r.requestStatus).toBe('rejected');
   });
 });

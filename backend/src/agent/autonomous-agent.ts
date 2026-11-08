@@ -6,6 +6,14 @@ import { getChainMode, getNearConfig, submitPaymentRequest, ChainSubmission } fr
 import { syncVaultFromChain, mapOnchainStatus } from '../near/sync';
 import { interpretTask, AgentProposal, TaskForInterpretation } from './llm';
 
+/** The LLM refused to propose a payment; nothing was submitted. */
+export class AgentDeclinedError extends Error {
+  constructor(public readonly agentProposal: AgentProposal) {
+    super(`Agent declined to propose a payment: ${agentProposal.decline_reason}`);
+    this.name = 'AgentDeclinedError';
+  }
+}
+
 /** A completed task to pay for. proposedPayee/proposedAmountNear are the scripted values (and LLM fallback). */
 export type TaskJob = TaskForInterpretation;
 
@@ -43,7 +51,26 @@ export class AutonomousTaskAgent {
 
     // 1. The agent (LLM, or scripted fallback) interprets the task and proposes a payment.
     //    It cannot move money; everything below decides whether this proposal is allowed.
-    const agentProposal = await interpretTask(job);
+    let agentProposal = await interpretTask(job);
+    if (agentProposal.declined) {
+      if (!job.simulateCompromisedAgent) {
+        await repo.logAudit('AgentDeclinedTask', agent.account_id, job.taskId, {
+          model: agentProposal.model,
+          reason: agentProposal.decline_reason,
+          title: job.title,
+        });
+        throw new AgentDeclinedError(agentProposal);
+      }
+      // Compromised-agent simulation: the LLM refused, but assume an attacker
+      // controls the agent and submits anyway. The vault must still hold.
+      agentProposal = {
+        ...agentProposal,
+        recipient: job.proposedPayee,
+        amount_near: job.proposedAmountNear,
+        mode: 'scripted',
+        fallback_reason: `LLM declined (${agentProposal.decline_reason}). Compromised-agent simulation: submitting the attacker's request anyway to show the vault still refuses.`,
+      };
+    }
     const payee = agentProposal.recipient;
     const amountNear = agentProposal.amount_near;
 

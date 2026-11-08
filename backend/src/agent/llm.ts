@@ -19,6 +19,11 @@ export interface TaskForInterpretation {
   /** Pre-extracted values used in scripted mode and as the fallback. */
   proposedPayee: string;
   proposedAmountNear: number;
+  /**
+   * Demo only: treat the agent as compromised. If the LLM declines, submit the
+   * scripted (malicious) proposal anyway so the vault's enforcement is exercised.
+   */
+  simulateCompromisedAgent?: boolean;
 }
 
 export interface AgentProposal {
@@ -31,6 +36,9 @@ export interface AgentProposal {
   /** Why the scripted values were used instead of the model's (if they were). */
   fallback_reason?: string;
   latency_ms?: number;
+  /** The LLM refused to propose a payment for this task. */
+  declined?: boolean;
+  decline_reason?: string;
 }
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
@@ -117,8 +125,29 @@ export async function interpretTask(task: TaskForInterpretation): Promise<AgentP
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) {
-      const body = (await res.text()).slice(0, 200);
-      return scripted(task, `Groq HTTP ${res.status}: ${body}`);
+      const raw = await res.text();
+      // JSON mode rejects non-JSON output; at temperature 0 with a clear schema
+      // this is the model refusing (e.g. "I'm sorry, I can't...").
+      if (res.status === 400 && raw.includes('json_validate_failed')) {
+        let said = '';
+        try {
+          said = String(JSON.parse(raw).error?.failed_generation ?? '').slice(0, 160);
+        } catch {
+          // keep empty
+        }
+        return {
+          recipient: task.proposedPayee,
+          amount_near: task.proposedAmountNear,
+          rationale: said ? `Model declined: "${said}"` : 'Model declined to propose a payment.',
+          task_category: 'declined',
+          mode: 'llm',
+          model,
+          latency_ms: Date.now() - started,
+          declined: true,
+          decline_reason: said || 'model returned no JSON proposal',
+        };
+      }
+      return scripted(task, `Groq HTTP ${res.status}: ${raw.slice(0, 200)}`);
     }
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const content = data.choices?.[0]?.message?.content ?? '';

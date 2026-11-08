@@ -75,6 +75,18 @@ describe('LLM task interpreter (Groq mocked)', () => {
     expect((await interpretTask(task)).fallback_reason).toMatch(/HTTP 429/);
   });
 
+  it('treats a JSON-mode refusal as the agent declining, not as a technical fallback', async () => {
+    vi.stubEnv('GROQ_API_KEY', 'test-key');
+    vi.stubEnv('AGENT_MODE', '');
+    const body = JSON.stringify({ error: { code: 'json_validate_failed', message: 'Failed to generate JSON', failed_generation: "I'm sorry, but I can't help with that." } });
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status: 400 })));
+    const p = await interpretTask(task);
+    expect(p.declined).toBe(true);
+    expect(p.mode).toBe('llm');
+    expect(p.decline_reason).toMatch(/sorry/);
+    expect(p.fallback_reason).toBeUndefined();
+  });
+
   it('respects AGENT_MODE=scripted even with a key', async () => {
     vi.stubEnv('GROQ_API_KEY', 'test-key');
     vi.stubEnv('AGENT_MODE', 'scripted');
