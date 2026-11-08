@@ -8,6 +8,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import crypto from 'node:crypto';
+
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function base58(buf) {
+  const d = [0];
+  for (const byte of buf) {
+    for (let j = 0; j < d.length; j++) d[j] <<= 8;
+    d[0] += byte;
+    let c = 0;
+    for (let j = 0; j < d.length; j++) { d[j] += c; c = (d[j] / 58) | 0; d[j] %= 58; }
+    while (c) { d.push(c % 58); c = (c / 58) | 0; }
+  }
+  for (let i = 0; i < buf.length && buf[i] === 0; i++) d.push(0);
+  return d.reverse().map((x) => B58[x]).join('');
+}
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..');
 
@@ -128,12 +143,27 @@ async function main() {
   console.log(`  vault ${vault}, owner ${owner}, agent ${agent}, recipient ${recipient}`);
   console.log(`  caps: per-tx ${nearStr(perTxCap)}, daily ${nearStr(dailyBudget)} (DEMO_SCALE=${scale})`);
 
-  // 1. Deploy + init
+  // 1. Deploy + init, or upgrade code in place (state kept) if the local build differs
   if (await isDeployed()) {
     const policy = await view('get_policy');
     if (!policy) fail('Vault has code but get_policy failed; it may be an old or uninitialised contract.');
     if (policy.policy_signer_pk !== signerPk) fail(`On-chain policy signer ${policy.policy_signer_pk} does not match .env ${signerPk}.`);
-    console.log(`\n[ok] Contract already deployed (policy v${policy.version}, chain ${policy.chain_id})`);
+    const wasm = findWasm();
+    const localHash = base58(crypto.createHash('sha256').update(fs.readFileSync(wasm)).digest());
+    const onchainHash = (await rpcQuery({ request_type: 'view_account', account_id: vault })).code_hash;
+    if (localHash === onchainHash) {
+      console.log(`\n[ok] Contract already deployed and up to date (policy v${policy.version}, chain ${policy.chain_id})`);
+    } else {
+      console.log(`\nLocal build differs from deployed code:\n  on-chain ${onchainHash}\n  local    ${localHash}  (${wasm})`);
+      near(
+        ['contract', 'deploy', vault, 'use-file', wasm, 'without-init-call',
+          'network-config', network, 'sign-with-keychain', 'send'],
+        'Upgrade vault code in place (no re-init; state is kept)'
+      );
+      const after = await view('get_policy');
+      if (!after || after.version !== policy.version) fail('Upgrade finished but state check failed; tell Claude.');
+      console.log(`[ok] Upgraded; state intact (policy v${after.version})`);
+    }
   } else {
     const wasm = findWasm();
     console.log(`\nUsing wasm: ${wasm} (${fs.statSync(wasm).size} bytes)`);

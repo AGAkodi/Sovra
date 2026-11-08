@@ -1,0 +1,4 @@
+# Build NEAR contracts with cfg(near) so near-sdk uses host functions (e.g. panic_utf8
+# for readable panic messages). cargo-near sets this too; this covers plain cargo builds.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "near"]
