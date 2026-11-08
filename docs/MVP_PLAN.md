@@ -2,6 +2,8 @@
 
 Written 2026-11-08. Deadline 2026-11-14 23:59 UTC (about 6.5 days).
 
+> **Progress (2026-11-08, end of day):** Days 1–3 done. All six acceptance demo steps verified on testnet; owner approve and freeze work from the dashboard via Meteor Wallet (MyNearWallet is retired). RPC moved to FastNEAR after `rpc.testnet.near.org` started returning 429. Not yet done: dashboard deposit tested end to end, persistence (Day 4), Vercel deploy, Groq agent, UI pass, video. See `IMPLEMENTATION_LOG.md` for tx evidence.
+
 The goal is the TODO's **six-step acceptance demo, running on real testnet transactions**. Anything that doesn't serve that demo waits until it works end to end.
 
 ---

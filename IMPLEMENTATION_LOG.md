@@ -75,3 +75,4 @@
 - **RPC incident**: `rpc.testnet.near.org` now returns `-429 "THIS ENDPOINT IS DEPRECATED"`, which stalled the backend reconciler. Switched backend, scripts and wallet selector to FastNEAR (`https://test.rpc.fastnear.com`, archival `https://archival-rpc.testnet.fastnear.com`). Verified with a routine payment ([AdhfiWAg…](https://testnet.nearblocks.io/txns/AdhfiWAgScTqRwiVE4w57YiL4oDZYoeiMrGr4WbxoFKt)).
 - Backend restart cleared in-memory history (expected until Day 4 persistence).
 - **Freeze from the dashboard** (Meteor-signed): vault `is_frozen=true`; agent routine request refused on-chain with "Vault is frozen: all agent execution suspended" ([AsGAr7yE…](https://testnet.nearblocks.io/txns/AsGAr7yE85f37VDnU8nYKUWGsPnmHcEV3Mqp4FRZCosE)).
+- **Unfreeze from the dashboard** (Meteor-signed): `is_frozen=false`. Day 3 acceptance met: owner connects wallet, approves a held payment and freezes/unfreezes from the UI, every action wallet-confirmed with 1 yoctoNEAR.
