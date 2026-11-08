@@ -49,3 +49,16 @@
 - CI builds the deployable wasm with `cargo near build non-reproducible-wasm` and uploads artifact `throttle_vault-wasm`.
 - First CI run failed in contract tests (exit 101; logs not readable without auth). Likely cause: the event-log test made 225 writes in one mocked call. Fixed by giving each call a fresh context; CI now re-emits test failures as annotations. Green run: https://github.com/AGAkodi/Sovra/actions/runs/42499569343
 - Next: account creation and deployment following `docs/TESTNET_SETUP.md` (run by the owner, signs with their keychain).
+
+## Phase 2: vault live on testnet (2026-11-08)
+- Accounts (faucet, ed25519): `sovra-{owner,vault,agent,worker,attacker}-monarch.testnet`.
+- Vault `sovra-vault-monarch.testnet` deployed from the local `cargo build` wasm (474,314 bytes; storage reserve 4.755 NEAR). Policy v1, chain `testnet`, cap 3 NEAR, daily budget 10 NEAR (`DEMO_SCALE=0.1`), whitelist = worker only.
+- Agent key on `sovra-agent-monarch.testnet`: FunctionCall, `request_payment` on the vault only, 1 NEAR allowance. The backend holds only this key.
+- Owner deposit: 2 NEAR (`DepositReceived` event).
+- **First real scenario run (backend in testnet mode):**
+  | Scenario | Risk / level | Vault result | Tx |
+  |---|---|---|---|
+  | routine 0.3 NEAR → worker | 4 / L1 | `Succeeded` (worker 10 → 10.3 NEAR) | [9QxHoJFX…](https://testnet.nearblocks.io/txns/9QxHoJFXay36L7kjQLHTbRsgbk5FBzUS2pERWWJaKVGa) |
+  | spike 2.5 NEAR → worker | 29 / L5 | `PendingApproval`, 2.5 NEAR reserved | [2NKfoKsP…](https://testnet.nearblocks.io/txns/2NKfoKsPyNbAxVUi5pTxVGALKkeZvX9cS5prnWEXLFUV) |
+  | injection 8 NEAR → attacker | 92 / L6 | `Rejected` on-chain: exceeds per_tx_cap (attacker balance unchanged) | [9DNbTW9C…](https://testnet.nearblocks.io/txns/9DNbTW9CYdEBirE387As3sjDkTXEkK6UaLTVCSrPVbdT) |
+- Owner action scripts added (`scripts/owner-*.cmd`) as a stopgap until the wallet UI.
