@@ -41,3 +41,4 @@
   - Host `cargo test` on Windows GNU toolchain needs MinGW `dlltool` + `as` (getrandom raw-dylib). Not installed; see below for status.
   - Not yet deployed to testnet; no real tx hashes yet. Owner wallet integration (wallet-selector) still missing.
 - **Contract test status**: `cargo test` cannot build on this machine yet. `--cfg getrandom_backend="windows_legacy"` gets past getrandom, but near-sdk's unit-testing runtime also compiles native code (`cmake` crate), which needs MSVC Build Tools or MSYS2 MinGW. The tests are written but **not yet run**.
+- **Update 2026-11-08**: CI added (`.github/workflows/ci.yml`). First run on `chain-path-and-ci` passed all jobs, including contract `cargo test` (21 tests) and the wasm release build on ubuntu-latest: https://github.com/AGAkodi/Sovra/actions/runs/42498141060
