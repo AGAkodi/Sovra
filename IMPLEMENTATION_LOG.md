@@ -42,3 +42,10 @@
   - Not yet deployed to testnet; no real tx hashes yet. Owner wallet integration (wallet-selector) still missing.
 - **Contract test status**: `cargo test` cannot build on this machine yet. `--cfg getrandom_backend="windows_legacy"` gets past getrandom, but near-sdk's unit-testing runtime also compiles native code (`cmake` crate), which needs MSVC Build Tools or MSYS2 MinGW. The tests are written but **not yet run**.
 - **Update 2026-11-08**: CI added (`.github/workflows/ci.yml`). First run on `chain-path-and-ci` passed all jobs, including contract `cargo test` (21 tests) and the wasm release build on ubuntu-latest: https://github.com/AGAkodi/Sovra/actions/runs/42498141060
+
+## Phase 2 prep: testnet readiness (2026-11-08)
+- Contract: `expire_request`, owner `withdraw`, `get_agent_status`, `get_allowed_recipients`, 200-entry event ring buffer; 29 unit tests.
+- Backend: risk engine mirrors on-chain cap/budget/whitelist; `DEMO_SCALE` for faucet-sized amounts (same authority levels, tested); 28 tests.
+- CI builds the deployable wasm with `cargo near build non-reproducible-wasm` and uploads artifact `throttle_vault-wasm`.
+- First CI run failed in contract tests (exit 101; logs not readable without auth). Likely cause: the event-log test made 225 writes in one mocked call. Fixed by giving each call a fresh context; CI now re-emits test failures as annotations. Green run: https://github.com/AGAkodi/Sovra/actions/runs/42499569343
+- Next: account creation and deployment following `docs/TESTNET_SETUP.md` (run by the owner, signs with their keychain).
