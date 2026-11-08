@@ -50,7 +50,7 @@ const need = (k) => {
   return v;
 };
 const network = env.NEAR_NETWORK || 'testnet';
-const rpc = env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
+const rpc = env.NEAR_RPC_URL || 'https://test.rpc.fastnear.com';
 const scale = Number(env.DEMO_SCALE || '1');
 if (!(scale > 0 && scale <= 1)) fail(`DEMO_SCALE must be in (0, 1], got ${env.DEMO_SCALE}`);
 const vault = need('VAULT_CONTRACT_ID');

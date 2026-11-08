@@ -32,7 +32,7 @@ function isSet(value: string | undefined): value is string {
 export function getNearConfig(): NearConfig {
   return {
     networkId: process.env.NEAR_NETWORK || 'testnet',
-    rpcUrl: process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org',
+    rpcUrl: process.env.NEAR_RPC_URL || 'https://test.rpc.fastnear.com',
     vaultContractId: process.env.VAULT_CONTRACT_ID || '',
     agentAccountId: process.env.AGENT_ACCOUNT_ID || '',
     agentPrivateKey: process.env.AGENT_PRIVATE_KEY || '',

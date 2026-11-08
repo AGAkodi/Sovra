@@ -13,6 +13,8 @@ import { actionCreators } from '@near-js/transactions';
 import '@near-wallet-selector/modal-ui/styles.css';
 
 const NETWORK = (import.meta.env.VITE_NEAR_NETWORK as 'testnet' | 'mainnet' | undefined) ?? 'testnet';
+// rpc.testnet.near.org (the selector default) is deprecated and rate-limited.
+const RPC_URL = import.meta.env.VITE_NEAR_RPC_URL ?? 'https://test.rpc.fastnear.com';
 const ONE_YOCTO = 1n;
 const TGAS = 1_000_000_000_000n;
 
@@ -72,7 +74,13 @@ export const WalletProvider: React.FC<{ vaultContractId?: string | null; ownerId
     let cancelled = false;
     (async () => {
       const selector = await setupWalletSelector({
-        network: NETWORK,
+        network: {
+          networkId: NETWORK,
+          nodeUrl: RPC_URL,
+          helperUrl: `https://helper.${NETWORK}.near.org`,
+          explorerUrl: `https://${NETWORK}.nearblocks.io`,
+          indexerUrl: `https://${NETWORK}-api.kitwallet.app`,
+        },
         // MyNearWallet is retired and no longer accepts new app connections (Nov 2026).
         modules: [setupMeteorWallet()],
       });

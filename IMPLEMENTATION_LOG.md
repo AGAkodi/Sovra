@@ -67,3 +67,10 @@
 - **Bug found on testnet**: the refusal surfaced as `WebAssembly trap: unreachable`. Cause: near-sdk-env's `panic_str` uses the host `panic_utf8` only under `cfg(near)`, which `cargo near` sets and plain `cargo build` does not. Fixed with `contracts/throttle-vault/.cargo/config.toml`; contract upgraded in place via `setup-vault` (no re-init, state intact, code hash `HbFxt3GB…`). Refusal now reads "Vault is frozen: all agent execution suspended" ([DFkZbfR8…](https://testnet.nearblocks.io/txns/DFkZbfR84RyV9DEN77B7E58xgxnv3NcBzkrVvTwdCS9K)).
 - **Unfreeze** → routine payment executes again ([2TVjvEoF…](https://testnet.nearblocks.io/txns/2TVjvEoFiYwVCrQnoU4kCpWT4TgE4FEBgcwXFe2Dd637)); authority now Level 2 because trust fell after the injection attempt.
 - **All six acceptance demo steps verified on testnet** (owner actions via CLI scripts; wallet UI is Day 3).
+
+## Phase 3: owner wallet in the dashboard (2026-11-08)
+- Contract hardening deployed (in-place upgrade, code hash `5BqzyLXU…`, state intact): owner methods require exactly 1 yoctoNEAR, so only a full-access, wallet-confirmed key can approve, reject, freeze, change policy or withdraw.
+- Dashboard wallet via NEAR Wallet Selector v10. **MyNearWallet is retired and refuses new app connections**, so Meteor Wallet is the only option offered. Sign-in requests no function-call key.
+- **First wallet-signed owner approval from the dashboard**: request `req-bd54508f1d914a61` (2.5 NEAR spike, [ALADPr9R…](https://testnet.nearblocks.io/txns/ALADPr9RV1kD46XgZhammU5pyrpTGXTMRt9SQku3vWhW)) approved in Meteor; on-chain status `Succeeded`.
+- **RPC incident**: `rpc.testnet.near.org` now returns `-429 "THIS ENDPOINT IS DEPRECATED"`, which stalled the backend reconciler. Switched backend, scripts and wallet selector to FastNEAR (`https://test.rpc.fastnear.com`, archival `https://archival-rpc.testnet.fastnear.com`). Verified with a routine payment ([AdhfiWAg…](https://testnet.nearblocks.io/txns/AdhfiWAgScTqRwiVE4w57YiL4oDZYoeiMrGr4WbxoFKt)).
+- Backend restart cleared in-memory history (expected until Day 4 persistence).

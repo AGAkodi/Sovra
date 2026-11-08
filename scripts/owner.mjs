@@ -29,7 +29,7 @@ for (const line of fs.readFileSync(path.join(ROOT, '.env'), 'utf8').split(/\r?\n
 const vault = env.VAULT_CONTRACT_ID;
 const owner = env.OWNER_ACCOUNT_ID;
 const network = env.NEAR_NETWORK || 'testnet';
-const rpc = env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
+const rpc = env.NEAR_RPC_URL || 'https://test.rpc.fastnear.com';
 if (!vault || !owner) fail('VAULT_CONTRACT_ID / OWNER_ACCOUNT_ID missing in .env');
 
 async function view(method, args = {}) {

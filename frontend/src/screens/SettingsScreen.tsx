@@ -31,7 +31,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ vault }) => {
             </div>
             <div className="flex justify-between py-1.5 border-b border-border-subtle/50">
               <span className="text-text-muted">Primary RPC</span>
-              <span className="font-mono text-text-secondary">https://rpc.testnet.near.org</span>
+              <span className="font-mono text-text-secondary">https://test.rpc.fastnear.com</span>
             </div>
             <div className="flex justify-between py-1.5 border-b border-border-subtle/50">
               <span className="text-text-muted">Explorer URL</span>
@@ -39,7 +39,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ vault }) => {
             </div>
             <div className="flex justify-between py-1.5">
               <span className="text-text-muted">Archival RPC</span>
-              <span className="font-mono text-text-secondary">https://archival-rpc.testnet.near.org</span>
+              <span className="font-mono text-text-secondary">https://archival-rpc.testnet.fastnear.com</span>
             </div>
           </div>
         </div>
