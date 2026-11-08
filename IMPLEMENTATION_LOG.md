@@ -82,3 +82,10 @@
 - Backend `store_mode: supabase`. Ran routine ([2pLz5kAf…](https://testnet.nearblocks.io/txns/2pLz5kAf3v2mxFNtw3depeH5z8yX8NixeBsAxifkXZtr), succeeded) and injection ([HuRQW5vQ…](https://testnet.nearblocks.io/txns/HuRQW5vQ9Lt7qNaQRC3UhAJzFNdsYSaTXzztBvAkHhKm), rejected on-chain), **restarted the backend**, and confirmed requests, risk evaluation, agent trust (48.5) and audit events all survived.
 - Note: DB passwords with `@` or spaces must be percent-encoded in `SUPABASE_DB_URL`.
 - Vercel: `backend/api/index.ts` + `backend/vercel.json` (daily cron; Hobby limit), `frontend/vercel.json`, `VITE_API_BASE`, CORS allow-list, spend rate limit. Not deployed yet; see `docs/DEPLOY_VERCEL.md`.
+
+## Phase 5: hosted on Vercel (2026-11-08)
+- **Dashboard:** https://throttle-dashboard-ruddy.vercel.app  · **API:** https://throttle-api-mauve.vercel.app
+- Two projects (`throttle-api` root `backend`, `throttle-dashboard` root `frontend`), both git-connected to `AGAkodi/Sovra`. Env vars set via the Vercel REST API from `.env`; secrets stored as sensitive. `throttle-api.vercel.app` belongs to someone else, so the API lives on `throttle-api-mauve.vercel.app`.
+- Hosted API `/health`: `chain_mode: testnet`, `store_mode: supabase`, non-ephemeral signer. CORS allows only the dashboard origin (verified with a foreign origin).
+- Hosted routine payment confirmed on-chain ([EjVdtP9M…](https://testnet.nearblocks.io/txns/EjVdtP9MVjGs38jbssiGtMYpCpJAvcQXuGnRDqQtt1gm)); hosted dashboard shows live vault data and the persisted history.
+- Deploy fixes: deploy from repo root when Root Directory is set; API-only project needs `outputDirectory` (`backend/public`) and a build command (`npm run typecheck`).

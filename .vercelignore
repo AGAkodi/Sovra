@@ -1,0 +1,16 @@
+# Never upload secrets
+.env
+.env.*
+!.env.example
+**/.env.local
+# Build output and dependencies (Vercel installs deps itself)
+**/node_modules
+**/dist
+contracts/**/target
+# Not needed by either deployment
+contracts
+supabase
+scripts
+tests
+docs
+*.log

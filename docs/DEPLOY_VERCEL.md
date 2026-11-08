@@ -1,5 +1,9 @@
 # Deploying to Vercel
 
+**Live (2026-11-08):** dashboard https://throttle-dashboard-ruddy.vercel.app · API https://throttle-api-mauve.vercel.app (`/health`). Vercel team `monarchs-projects-cc314129`.
+
+> Both projects are connected to `AGAkodi/Sovra`, so pushes to `main` deploy production automatically. The CLI path used for the first deploy: `vercel deploy --prod --yes --project <name>` run from the **repo root** (the projects have Root Directory set; a root `.vercelignore` keeps `.env`, `contracts/`, build output and `node_modules` out of the upload).
+
 Two Vercel projects from the same GitHub repo (`AGAkodi/Sovra`):
 
 | Project | Root directory | What it serves |
