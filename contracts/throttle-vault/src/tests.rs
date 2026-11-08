@@ -34,12 +34,19 @@ fn worker() -> AccountId {
     acc("service-worker.testnet")
 }
 
+/// Owner calls attach 1 yoctoNEAR by default, as a wallet-confirmed owner tx would.
 fn set_ctx(predecessor: AccountId, balance: NearToken, timestamp: u64) {
+    let deposit = if predecessor == owner() { NearToken::from_yoctonear(1) } else { NearToken::from_yoctonear(0) };
+    set_ctx_with_deposit(predecessor, balance, timestamp, deposit);
+}
+
+fn set_ctx_with_deposit(predecessor: AccountId, balance: NearToken, timestamp: u64, deposit: NearToken) {
     let ctx = VMContextBuilder::new()
         .current_account_id(vault_id())
         .predecessor_account_id(predecessor.clone())
         .signer_account_id(predecessor)
         .account_balance(balance)
+        .attached_deposit(deposit)
         .block_timestamp(timestamp)
         .build();
     testing_env!(ctx);
@@ -343,4 +350,29 @@ fn views_report_agent_and_recipients() {
     assert!(status.approved);
     assert!(!status.vault_frozen);
     assert_eq!(v.get_allowed_recipients(), vec![worker()]);
+}
+
+#[test]
+#[should_panic(expected = "Owner actions require exactly 1 yoctoNEAR")]
+fn owner_action_without_yocto_is_refused() {
+    let mut v = setup();
+    set_ctx_with_deposit(owner(), near(100), NOW, NearToken::from_yoctonear(0));
+    v.freeze();
+}
+
+#[test]
+#[should_panic(expected = "Owner actions require exactly 1 yoctoNEAR")]
+fn approval_without_yocto_is_refused() {
+    let mut v = setup();
+    spike(&mut v);
+    set_ctx_with_deposit(owner(), near(100), NOW, NearToken::from_yoctonear(0));
+    v.approve_request("req-spike".into());
+}
+
+#[test]
+#[should_panic(expected = "Owner actions require exactly 1 yoctoNEAR")]
+fn owner_action_with_wrong_deposit_is_refused() {
+    let mut v = setup();
+    set_ctx_with_deposit(owner(), near(100), NOW, NearToken::from_yoctonear(2));
+    v.withdraw(near(1));
 }

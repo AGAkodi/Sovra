@@ -90,8 +90,8 @@ export class MemoryStore {
 
     const vault: StoredVault = {
       id: vaultId,
-      contract_id: 'throttle-vault.testnet',
-      owner_id: 'throttle-owner.testnet',
+      contract_id: process.env.VAULT_CONTRACT_ID || 'throttle-vault.testnet',
+      owner_id: process.env.OWNER_ACCOUNT_ID || 'throttle-owner.testnet',
       network: 'testnet',
       is_frozen: false,
       policy_version: 1,
@@ -111,7 +111,7 @@ export class MemoryStore {
     const agent: StoredAgent = {
       id: agentId,
       vault_id: vaultId,
-      account_id: 'throttle-agent.testnet',
+      account_id: process.env.AGENT_ACCOUNT_ID || 'throttle-agent.testnet',
       name: 'Autonomous Task Paying Agent',
       trust_score: 82.5,
       authority_level: 1,

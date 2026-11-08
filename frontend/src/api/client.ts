@@ -88,12 +88,30 @@ export interface AuditEvent {
   timestamp: number;
 }
 
+export interface Health {
+  status: string;
+  network: string;
+  chain_mode: 'testnet' | 'simulation';
+  vault_contract_id: string | null;
+  policy_signer: string;
+  policy_signer_ephemeral: boolean;
+}
+
 const API_BASE = '/api';
 
 export const api = {
-  async getHealth() {
+  async getHealth(): Promise<Health> {
     const res = await fetch(`${API_BASE}/health`);
+    if (!res.ok) throw new Error('Backend unreachable');
     return res.json();
+  },
+
+  /** Re-reads one request from the vault contract (after an owner wallet action). */
+  async syncRequest(id: string): Promise<{ changed: boolean; request: PaymentRequest }> {
+    const res = await fetch(`${API_BASE}/payment-requests/${id}/sync`, { method: 'POST' });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Sync failed');
+    return body;
   },
 
   async getVault(id: string = 'vault-01'): Promise<Vault> {

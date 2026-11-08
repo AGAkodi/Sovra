@@ -127,7 +127,7 @@ async function agentKeyExists() {
   return !!r?.permission;
 }
 
-const call = (method, args, deposit = '0 NEAR') => [
+const call = (method, args, deposit = '1 yoctoNEAR') => [
   'contract', 'call-function', 'as-transaction', vault, method,
   'json-args', JSON.stringify(args),
   'prepaid-gas', '30.0 Tgas', 'attached-deposit', deposit,

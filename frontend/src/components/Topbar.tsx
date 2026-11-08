@@ -1,11 +1,14 @@
 import React from 'react';
-import { Shield, RefreshCw, Wallet, Radio } from 'lucide-react';
+import { Shield, RefreshCw, Radio } from 'lucide-react';
+import { WalletButton } from '../wallet/WalletButton';
 
 interface TopbarProps {
   onRefresh: () => void;
   lastUpdated: Date;
   isSyncing: boolean;
   vaultContractId?: string;
+  ownerId?: string | null;
+  testnetMode: boolean;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({
@@ -13,6 +16,8 @@ export const Topbar: React.FC<TopbarProps> = ({
   lastUpdated,
   isSyncing,
   vaultContractId = 'throttle-vault.testnet',
+  ownerId,
+  testnetMode,
 }) => {
   return (
     <header className="h-14 border-b border-border-subtle bg-surface-raised/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-40">
@@ -47,10 +52,7 @@ export const Topbar: React.FC<TopbarProps> = ({
           <span className="text-text-secondary truncate max-w-[140px]">{vaultContractId}</span>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1 rounded-control bg-surface-secondary border border-border-subtle text-xs font-mono">
-          <Wallet className="w-3.5 h-3.5 text-telemetry-cyan" />
-          <span className="text-text-primary">throttle-owner.testnet</span>
-        </div>
+        <WalletButton ownerId={ownerId} testnetMode={testnetMode} />
 
         <button
           onClick={onRefresh}

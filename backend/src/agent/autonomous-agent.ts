@@ -189,6 +189,8 @@ export class AutonomousTaskAgent {
       }
       case 'held':
         req.status = 'pending_approval';
+        // Show the vault's approval deadline, not the 5-minute attestation expiry.
+        if (sub.onchain_request) req.expiry_ns = sub.onchain_request.expiry_ns;
         return { request: req, message: `Vault holding request for owner approval: ${sub.reason}` };
       case 'rejected':
         req.status = 'rejected';

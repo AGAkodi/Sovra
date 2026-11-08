@@ -109,14 +109,14 @@ Open each `txHash` at `https://testnet.nearblocks.io/txns/<hash>` and record the
 **Approve the held spike** as the owner (until the wallet UI lands on Day 3):
 
 ```bash
-near contract call-function as-transaction <VAULT> approve_request json-args '{"request_id":"<id from spike>"}' prepaid-gas '50.0 Tgas' attached-deposit '0 NEAR' sign-as <OWNER> network-config testnet sign-with-keychain send
+near contract call-function as-transaction <VAULT> approve_request json-args '{"request_id":"<id from spike>"}' prepaid-gas '50.0 Tgas' attached-deposit '1 yoctoNEAR' sign-as <OWNER> network-config testnet sign-with-keychain send
 curl -s -X POST localhost:3001/payment-requests/<id>/sync
 ```
 
 **Freeze test** (demo step 5):
 
 ```bash
-near contract call-function as-transaction <VAULT> freeze json-args '{}' prepaid-gas '30.0 Tgas' attached-deposit '0 NEAR' sign-as <OWNER> network-config testnet sign-with-keychain send
+near contract call-function as-transaction <VAULT> freeze json-args '{}' prepaid-gas '30.0 Tgas' attached-deposit '1 yoctoNEAR' sign-as <OWNER> network-config testnet sign-with-keychain send
 curl -s -X POST localhost:3001/scenarios/run -H 'Content-Type: application/json' -d '{"scenario":"routine"}'
 ```
 

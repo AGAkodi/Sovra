@@ -427,8 +427,9 @@ impl ThrottleVault {
         }
     }
 
+    #[payable]
     pub fn approve_request(&mut self, request_id: String) -> RequestOutcome {
-        self.assert_owner();
+        self.assert_owner_full_access();
         require!(!self.is_frozen, "Vault is frozen: unfreeze before approving");
         let mut req = self
             .requests
@@ -455,8 +456,9 @@ impl ThrottleVault {
         RequestOutcome::Executing { request_id }
     }
 
+    #[payable]
     pub fn reject_request(&mut self, request_id: String, reason: String) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         let mut req = self
             .requests
             .get(&request_id)
@@ -509,8 +511,9 @@ impl ThrottleVault {
     /// Owner recovery path, separate from agent payments. Can never touch funds
     /// reserved for in-flight or held requests, or the storage reserve.
     /// Works while frozen, so the owner can always recover the treasury.
+    #[payable]
     pub fn withdraw(&mut self, amount: NearToken) -> Promise {
-        self.assert_owner();
+        self.assert_owner_full_access();
         require!(amount > NearToken::from_yoctonear(0), "Amount must be > 0");
         require!(
             amount <= self.available_balance(),
@@ -525,18 +528,21 @@ impl ThrottleVault {
         Promise::new(self.owner_id.clone()).transfer(amount)
     }
 
+    #[payable]
     pub fn freeze(&mut self) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         self.is_frozen = true;
         self.emit_event("VaultFrozen", None, self.owner_id.clone(), "Vault emergency freeze activated".to_string());
     }
 
+    #[payable]
     pub fn unfreeze(&mut self) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         self.is_frozen = false;
         self.emit_event("VaultUnfrozen", None, self.owner_id.clone(), "Vault emergency freeze released".to_string());
     }
 
+    #[payable]
     pub fn set_policy(
         &mut self,
         per_tx_cap: NearToken,
@@ -545,7 +551,7 @@ impl ThrottleVault {
         max_risk_for_autonomous: u8,
         policy_signer_pk: Option<PublicKey>,
     ) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         if let Some(ref pk) = policy_signer_pk {
             require!(pk.curve_type() == CurveType::ED25519, "Policy signer must be ed25519");
         }
@@ -564,8 +570,9 @@ impl ThrottleVault {
         );
     }
 
+    #[payable]
     pub fn set_agent(&mut self, agent_id: AccountId, approved: bool) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         if approved {
             self.approved_agents.insert(agent_id.clone());
         } else {
@@ -574,8 +581,9 @@ impl ThrottleVault {
         self.emit_event("AgentStatusUpdated", None, self.owner_id.clone(), format!("Agent {} approved={}", agent_id, approved));
     }
 
+    #[payable]
     pub fn set_recipient(&mut self, recipient: AccountId, allowed: bool) {
-        self.assert_owner();
+        self.assert_owner_full_access();
         if allowed {
             self.allowed_recipients.insert(recipient.clone());
         } else {
@@ -699,6 +707,17 @@ impl ThrottleVault {
         require!(
             env::predecessor_account_id() == self.owner_id,
             "Unauthorized: Only vault owner can perform this action"
+        );
+    }
+
+    /// Owner check plus exactly 1 yoctoNEAR attached. Function-call access keys
+    /// cannot attach deposits, so this forces a full-access (wallet-confirmed)
+    /// signature: a leaked dapp session key can never approve, freeze or withdraw.
+    fn assert_owner_full_access(&self) {
+        self.assert_owner();
+        require!(
+            env::attached_deposit() == NearToken::from_yoctonear(1),
+            "Owner actions require exactly 1 yoctoNEAR attached (full-access key)"
         );
     }
 

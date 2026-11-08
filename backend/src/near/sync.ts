@@ -70,6 +70,7 @@ export async function reconcileRequest(req: StoredRequest): Promise<boolean> {
     store.saveRequest(req);
     return false;
   }
+  if (onchain.status === 'PendingApproval') req.expiry_ns = onchain.expiry_ns;
   const next = mapOnchainStatus(onchain);
   if (next === req.status) {
     store.saveRequest(req);

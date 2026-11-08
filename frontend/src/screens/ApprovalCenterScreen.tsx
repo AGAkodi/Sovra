@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PaymentRequest, Vault } from '../api/client';
 import { Check, X, AlertTriangle, Clock, ShieldAlert, Copy, ExternalLink } from 'lucide-react';
 import { AuthorityPill } from '../components/AuthorityPill';
@@ -8,6 +8,26 @@ interface ApprovalCenterScreenProps {
   vault: Vault | null;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string, reason: string) => Promise<void>;
+  /** When set, approve/reject are disabled and this explains why (e.g. wallet not connected). */
+  ownerBlockedReason?: string;
+}
+
+/** Live countdown to the on-chain approval deadline. */
+function useNow(intervalMs = 1000): number {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), intervalMs);
+    return () => clearInterval(t);
+  }, [intervalMs]);
+  return now;
+}
+
+function formatRemaining(ms: number): string {
+  if (ms <= 0) return 'Expired';
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const sec = total % 60;
+  return `${m}:${sec.toString().padStart(2, '0')} left`;
 }
 
 export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
@@ -15,7 +35,9 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
   vault,
   onApprove,
   onReject,
+  ownerBlockedReason,
 }) => {
+  const now = useNow();
   const pendingRequests = requests.filter((r) => r.status === 'pending_approval');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [confirmHighValueId, setConfirmHighValueId] = useState<string | null>(null);
@@ -23,8 +45,8 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
   const [rejectModalId, setRejectModalId] = useState<string | null>(null);
 
   const handleApproveClick = async (req: PaymentRequest) => {
-    // Second confirmation for high value (> 15 NEAR)
-    if (req.amount_near > 15 && confirmHighValueId !== req.id) {
+    // Every held request needs an explicit second confirmation bound to amount + recipient.
+    if (confirmHighValueId !== req.id) {
       setConfirmHighValueId(req.id);
       return;
     }
@@ -71,10 +93,20 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
         </div>
       </div>
 
+      {ownerBlockedReason && pendingRequests.length > 0 && (
+        <div className="p-3 rounded-card bg-caution-amberDim/30 border border-caution-amber/40 text-xs text-caution-amber flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+          <span>{ownerBlockedReason}</span>
+        </div>
+      )}
+
       {/* Queue of Cards */}
       <div className="space-y-4">
         {pendingRequests.map((req) => {
-          const isHighValue = req.amount_near > 15;
+          const isHighValue = /AMOUNT/.test(req.reason ?? '');
+          const expiresMs = Number(BigInt(req.expiry_ns) / 1_000_000n);
+          const isExpired = expiresMs <= now;
+          const blocked = !!ownerBlockedReason || isExpired;
           const isProcessing = processingId === req.id;
           const isConfirming = confirmHighValueId === req.id;
 
@@ -92,8 +124,11 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
                     Held for Approval
                   </span>
                 </div>
-                <div className="text-xs font-mono text-text-muted">
-                  Vault Balance Available: <span className="text-text-primary">{vault?.vault_balance_near.toFixed(2)} NEAR</span>
+                <div className="flex flex-col items-start md:items-end gap-0.5 text-xs font-mono text-text-muted">
+                  <span className={isExpired ? 'text-blocked-red' : expiresMs - now < 10 * 60_000 ? 'text-caution-amber' : 'text-text-secondary'} title={`Approval deadline ${new Date(expiresMs).toISOString()}`}>
+                    {formatRemaining(expiresMs - now)}
+                  </span>
+                  <span>Vault Balance Available: <span className="text-text-primary">{vault?.vault_balance_near.toFixed(2)} NEAR</span></span>
                 </div>
               </div>
 
@@ -127,7 +162,7 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
                     </button>
                   </div>
                   <span className="text-[10px] text-text-muted block mt-1">
-                    Policy Version Bound: On-chain v{req.vault_id || 1}
+                    Policy Version Bound: On-chain v{req.policy_version ?? '?'}
                   </span>
                 </div>
               </div>
@@ -152,10 +187,10 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
               {isConfirming && (
                 <div className="p-3 rounded-card bg-caution-amberDim/40 border border-caution-amber text-xs text-caution-amber space-y-1">
                   <div className="font-semibold flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4" /> Second Confirmation Required
+                    <AlertTriangle className="w-4 h-4" /> You are authorizing only this request
                   </div>
                   <p className="text-[11px]">
-                    You are authorizing an irreversible on-chain transfer of{' '}
+                    Your wallet will ask you to sign an irreversible on-chain transfer of{' '}
                     <span className="font-bold font-mono">{req.amount_near} NEAR</span> strictly to{' '}
                     <span className="font-mono">{req.recipient}</span>.
                   </p>
@@ -166,7 +201,8 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   onClick={() => setRejectModalId(req.id)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || blocked}
+                  title={ownerBlockedReason ?? (isExpired ? 'Approval window has lapsed' : undefined)}
                   className="px-4 py-2 rounded-control bg-blocked-redDim/40 border border-blocked-red/40 text-blocked-red hover:bg-blocked-redDim text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                 >
                   <X className="w-4 h-4" />
@@ -175,13 +211,14 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
 
                 <button
                   onClick={() => handleApproveClick(req)}
-                  disabled={isProcessing}
+                  disabled={isProcessing || blocked}
+                  title={ownerBlockedReason ?? (isExpired ? 'Approval window has lapsed' : undefined)}
                   className="px-5 py-2 rounded-control bg-confirmed-green text-[#0B1018] hover:bg-confirmed-green/90 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
                 >
                   <Check className="w-4 h-4 stroke-[2.5]" />
                   <span>
                     {isProcessing
-                      ? 'Signing on Testnet...'
+                      ? 'Waiting for wallet…'
                       : isConfirming
                       ? 'Confirm & Sign Transfer'
                       : 'Approve & Release Funds'}

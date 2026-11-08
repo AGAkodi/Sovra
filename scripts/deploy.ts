@@ -85,7 +85,7 @@ function main() {
     require_whitelist: true,
   });
 
-  const ownerCall = (method: string, args: object, deposit = '0 NEAR') =>
+  const ownerCall = (method: string, args: object, deposit = '1 yoctoNEAR') =>
     `near contract call-function as-transaction ${vault} ${method} json-args '${JSON.stringify(args)}' ` +
     `prepaid-gas '30.0 Tgas' attached-deposit '${deposit}' sign-as ${owner} network-config ${network} sign-with-keychain send`;
 

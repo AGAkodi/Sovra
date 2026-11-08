@@ -24,6 +24,8 @@ interface OverviewScreenProps {
   onRunScenario: (scenario: 'routine' | 'spike' | 'injection') => void;
   isScenarioRunning: boolean;
   onNavigateToTab: (tab: 'agent' | 'payments' | 'approvals' | 'policies') => void;
+  /** Owner "fund vault" control, rendered only in testnet mode. */
+  fundControl?: React.ReactNode;
 }
 
 export const OverviewScreen: React.FC<OverviewScreenProps> = ({
@@ -34,6 +36,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   onRunScenario,
   isScenarioRunning,
   onNavigateToTab,
+  fundControl,
 }) => {
   const successfulCount = requests.filter((r) => r.status === 'succeeded').length;
   const blockedCount = requests.filter((r) => r.status === 'rejected').length;
@@ -212,6 +215,8 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
               <span className="font-mono text-text-secondary">{vault?.per_tx_cap_near || 10} NEAR</span>
             </div>
           </div>
+
+          {fundControl && <div className="pt-2 border-t border-border-subtle">{fundControl}</div>}
 
           {/* Quick Demo Scenarios Trigger */}
           <div className="pt-2 border-t border-border-subtle space-y-2">

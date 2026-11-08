@@ -19,6 +19,8 @@ interface SidebarProps {
   pendingApprovalsCount: number;
   isFrozen: boolean;
   onToggleFreeze: () => void;
+  /** When set, the freeze control is disabled and this explains why. */
+  freezeBlockedReason?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingApprovalsCount,
   isFrozen,
   onToggleFreeze,
+  freezeBlockedReason,
 }) => {
   const navItems = [
     { id: 'overview' as ScreenId, label: 'Overview', icon: LayoutDashboard },
@@ -90,11 +93,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </p>
         <button
           onClick={onToggleFreeze}
+          disabled={!!freezeBlockedReason}
+          title={freezeBlockedReason}
           className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-control text-xs font-medium transition-colors border ${
             isFrozen
               ? 'bg-confirmed-greenDim border-confirmed-green/40 text-confirmed-green hover:bg-confirmed-greenDim/80'
               : 'bg-blocked-redDim border-blocked-red/40 text-blocked-red hover:bg-blocked-redDim/80'
-          }`}
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {isFrozen ? (
             <>
@@ -108,6 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
         </button>
+        {freezeBlockedReason && <p className="text-[11px] text-text-muted leading-tight">{freezeBlockedReason}</p>}
       </div>
     </aside>
   );

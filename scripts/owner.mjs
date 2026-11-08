@@ -52,7 +52,7 @@ function ownerCall(method, args, gas = '30.0 Tgas') {
   const [cmd, prefix] = fs.existsSync(runJs) ? [process.execPath, [runJs]] : ['near', []];
   const res = spawnSync(cmd, [...prefix,
     'contract', 'call-function', 'as-transaction', vault, method, 'json-args', JSON.stringify(args),
-    'prepaid-gas', gas, 'attached-deposit', '0 NEAR', 'sign-as', owner,
+    'prepaid-gas', gas, 'attached-deposit', '1 yoctoNEAR', 'sign-as', owner,
     'network-config', network, 'sign-with-keychain', 'send'], { stdio: 'inherit' });
   if (res.status !== 0) fail(`${method} failed. See the near-cli output above.`);
 }
