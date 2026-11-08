@@ -37,9 +37,14 @@ export interface PaymentRequest {
   amount_yocto: string;
   risk_score: number;
   authority_level: number;
-  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected';
+  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected' | 'expired';
   reason?: string;
   tx_hash?: string;
+  chain_mode: 'testnet' | 'simulation';
+  decided_by?: 'risk_engine' | 'vault' | 'owner' | 'rpc_error';
+  chain_reason?: string;
+  policy_version?: number;
+  last_synced_at?: number;
   created_at: number;
   expiry_ns: string;
   resolved_at?: number;
@@ -149,14 +154,18 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     });
-    return res.json();
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Failed to freeze agent');
+    return body;
   },
 
   async unfreezeAgent(agentId: string = 'agent-01') {
     const res = await fetch(`${API_BASE}/agents/${agentId}/unfreeze`, {
       method: 'POST',
     });
-    return res.json();
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Failed to unfreeze agent');
+    return body;
   },
 
   async updatePolicy(policy: {
@@ -170,7 +179,9 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(policy),
     });
-    return res.json();
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Failed to update policy');
+    return body;
   },
 
   async runScenario(scenario: 'routine' | 'spike' | 'injection') {

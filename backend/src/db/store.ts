@@ -17,6 +17,7 @@ export interface StoredVault {
   vault_balance_near: number;
   reserved_balance_near: number;
   allowed_recipients: string[];
+  last_synced_at?: number;
 }
 
 export interface StoredAgent {
@@ -40,9 +41,17 @@ export interface StoredRequest {
   amount_yocto: string;
   risk_score: number;
   authority_level: AuthorityLevel;
-  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected';
+  status: 'pending_approval' | 'approved' | 'executing' | 'succeeded' | 'failed' | 'rejected' | 'expired';
   reason?: string;
   tx_hash?: string;
+  /** 'testnet' = outcome read from the vault contract; 'simulation' = nothing was broadcast. */
+  chain_mode: 'testnet' | 'simulation';
+  /** Who made the final call: the off-chain risk engine, the vault contract, or the owner. */
+  decided_by?: 'risk_engine' | 'vault' | 'owner' | 'rpc_error';
+  /** Raw reason the vault gave (rejection / panic / failure), when known. */
+  chain_reason?: string;
+  policy_version?: number;
+  last_synced_at?: number;
   created_at: number;
   expiry_ns: string;
   resolved_at?: number;

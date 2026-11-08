@@ -46,7 +46,10 @@ describe('Throttle End-to-End System Integration Tests', () => {
     expect(body.riskEvaluation.composite_risk).toBeLessThan(20);
     expect(body.riskEvaluation.authority_level).toBeLessThanOrEqual(2);
     expect(body.attestationSignature).toBeDefined();
-    expect(body.txHash).toBeDefined();
+    // Simulation results must be labelled and must not look like a chain tx hash.
+    expect(body.chainMode).toBe('simulation');
+    expect(body.message).toMatch(/^SIMULATION/);
+    expect(body.txHash).toMatch(/^sim-/);
   });
 
   it('3. Scenario 2: Anomalous 25 NEAR payment is held for owner approval', async () => {
@@ -71,7 +74,8 @@ describe('Throttle End-to-End System Integration Tests', () => {
     const approvedBody = await approveRes.json();
     expect(approvedBody.success).toBe(true);
     expect(approvedBody.request.status).toBe('succeeded');
-    expect(approvedBody.request.tx_hash).toBeDefined();
+    expect(approvedBody.request.tx_hash).toMatch(/^sim-approved-/);
+    expect(approvedBody.request.chain_mode).toBe('simulation');
   });
 
   it('4. Scenario 3: Malicious prompt injection attempt is refused & blocked', async () => {

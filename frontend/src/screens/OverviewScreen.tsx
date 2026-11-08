@@ -319,7 +319,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                     <AuthorityPill level={req.authority_level} />
                   </td>
                   <td className="py-3 px-3 font-sans">
-                    <StatusBadge status={req.status} />
+                    <StatusBadge status={req.status} chainMode={req.chain_mode} />
                   </td>
                 </tr>
               ))}
