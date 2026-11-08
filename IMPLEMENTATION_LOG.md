@@ -76,3 +76,9 @@
 - Backend restart cleared in-memory history (expected until Day 4 persistence).
 - **Freeze from the dashboard** (Meteor-signed): vault `is_frozen=true`; agent routine request refused on-chain with "Vault is frozen: all agent execution suspended" ([AsGAr7yE…](https://testnet.nearblocks.io/txns/AsGAr7yE85f37VDnU8nYKUWGsPnmHcEV3Mqp4FRZCosE)).
 - **Unfreeze from the dashboard** (Meteor-signed): `is_frozen=false`. Day 3 acceptance met: owner connects wallet, approves a held payment and freezes/unfreezes from the UI, every action wallet-confirmed with 1 yoctoNEAR.
+
+## Phase 4: persistence and Vercel readiness (2026-11-08)
+- Supabase project connected; `supabase/migrations/20261108000001_runtime_schema.sql` applied via `scripts/apply-migrations` (tables `agents`, `payment_requests`, `risk_evaluations`, `audit_events`; RLS on with no policies; audit log append-only, delete verified blocked).
+- Backend `store_mode: supabase`. Ran routine ([2pLz5kAf…](https://testnet.nearblocks.io/txns/2pLz5kAf3v2mxFNtw3depeH5z8yX8NixeBsAxifkXZtr), succeeded) and injection ([HuRQW5vQ…](https://testnet.nearblocks.io/txns/HuRQW5vQ9Lt7qNaQRC3UhAJzFNdsYSaTXzztBvAkHhKm), rejected on-chain), **restarted the backend**, and confirmed requests, risk evaluation, agent trust (48.5) and audit events all survived.
+- Note: DB passwords with `@` or spaces must be percent-encoded in `SUPABASE_DB_URL`.
+- Vercel: `backend/api/index.ts` + `backend/vercel.json` (daily cron; Hobby limit), `frontend/vercel.json`, `VITE_API_BASE`, CORS allow-list, spend rate limit. Not deployed yet; see `docs/DEPLOY_VERCEL.md`.
