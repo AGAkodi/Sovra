@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { RiskEngine, PaymentProposal, AgentHistory } from '../src/risk/engine';
-import { AttestationSigner } from '../src/risk/attestation';
+import nacl from 'tweetnacl';
+import { AttestationSigner, fromBase58, parseNearSecretKey, toBase58 } from '../src/risk/attestation';
 
 describe('Throttle Deterministic Risk Engine', () => {
   const riskEngine = new RiskEngine(['service-worker.testnet', 'oracle.testnet'], 10, 50);
@@ -122,12 +123,14 @@ describe('Throttle Deterministic Risk Engine', () => {
   it('8. Cryptographic attestation signer produces valid Ed25519 signatures', () => {
     const signer = new AttestationSigner();
     const payload = {
+      chain_id: 'testnet',
       vault_contract_id: 'throttle-vault.testnet',
       request_id: 'req-sig-01',
       recipient: 'service-worker.testnet',
       amount_yocto: '3000000000000000000000000',
       risk_score: 12,
       authority_level: 1,
+      policy_version: 1,
       expiry_ns: '1700000300000000000',
     };
 
@@ -150,6 +153,42 @@ describe('Throttle Deterministic Risk Engine', () => {
       signer.getPublicKey()
     );
     expect(isTamperedValid).toBe(false);
+
+    // Changing policy version or network also invalidates the signature.
+    expect(AttestationSigner.verifyAttestation({ ...payload, policy_version: 2 }, signed.signature_hex, signer.getPublicKey())).toBe(false);
+    expect(AttestationSigner.verifyAttestation({ ...payload, chain_id: 'mainnet' }, signed.signature_hex, signer.getPublicKey())).toBe(false);
+  });
+
+  it('9. Attestation format matches the contract test vector byte-for-byte', () => {
+    // Same seed, message and expected signature as contracts/throttle-vault/src/tests.rs.
+    const signer = AttestationSigner.fromSeed(new Uint8Array(32).fill(7));
+    const payload = {
+      chain_id: 'testnet',
+      vault_contract_id: 'vault.testnet',
+      request_id: 'req-routine',
+      recipient: 'service-worker.testnet',
+      amount_yocto: '3000000000000000000000000',
+      risk_score: 10,
+      authority_level: 1,
+      policy_version: 1,
+      expiry_ns: '1700000300000000000',
+    };
+    expect(AttestationSigner.createMessageString(payload)).toBe(
+      'throttle-attestation-v1|testnet|vault.testnet|req-routine|service-worker.testnet|3000000000000000000000000|10|1|1|1700000300000000000'
+    );
+    expect(signer.getNearPublicKey()).toBe('ed25519:GmaDrppBC7P5ARKV8g3djiwP89vz1jLK23V2GBjuAEGB');
+    expect(signer.signAttestation(payload).signature_hex).toBe(
+      'c627ab69ca22120222a079e539a762cf98dabf9589209a5e0241e2a28b262e9440f200ef4e7cbf3a3fa4cde99feb06844626f73d524df0359d8d7700239c0201'
+    );
+  });
+
+  it('10. Loads a NEAR-format secret key (64-byte and 32-byte seed forms)', () => {
+    const seed = new Uint8Array(32).fill(7);
+    const fromSeed = AttestationSigner.fromSeed(seed);
+    const kp = nacl.sign.keyPair.fromSeed(seed);
+    expect(new AttestationSigner(parseNearSecretKey(`ed25519:${toBase58(kp.secretKey)}`)).getNearPublicKey()).toBe(fromSeed.getNearPublicKey());
+    expect(new AttestationSigner(parseNearSecretKey(`ed25519:${toBase58(seed)}`)).getNearPublicKey()).toBe(fromSeed.getNearPublicKey());
+    expect(fromBase58(toBase58(kp.secretKey))).toEqual(kp.secretKey);
   });
 });
 

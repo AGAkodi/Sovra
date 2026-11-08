@@ -1,5 +1,7 @@
 # Throttle for NEAR - Security & Adversarial Test Report
 
+> **Status (2026-11-08): the table below is the target, not verified evidence.** The vault is not yet deployed to testnet, so no "Actual Result" has a tx hash behind it. Each scenario now has a contract unit test in `contracts/throttle-vault/src/tests.rs` (not yet run on the dev machine: needs a C toolchain, see `IMPLEMENTATION_LOG.md`) and the backend chain path is covered by `backend/tests/chain-path.test.ts` against a mocked RPC. Replace this banner with real tx hashes once deployed.
+
 ## 1. Test Execution Summary
 
 Date: November 6, 2026  

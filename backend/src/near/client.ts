@@ -1,211 +1,248 @@
 /**
- * NEAR API JS client wrapper for Throttle vault interactions.
+ * NEAR client for Throttle vault interactions.
  *
- * When AGENT_PRIVATE_KEY and VAULT_CONTRACT_ID env vars are set, this module
- * executes real NEAR testnet transactions. Otherwise it emits clearly-labelled
- * SIMULATION_MODE results so the demo can proceed without credentials.
+ * Two modes:
+ *  - 'testnet': VAULT_CONTRACT_ID, AGENT_ACCOUNT_ID and AGENT_PRIVATE_KEY are set.
+ *    Every payment request is broadcast to the vault and its on-chain result is read back.
+ *  - 'simulation': credentials are missing or NEAR_MODE=simulation. Nothing is broadcast;
+ *    callers must label results as simulated and never present them as chain confirmations.
  *
- * IMPORTANT: Never simulate a successful blockchain result without clearly marking it.
+ * Env vars are read lazily so they are picked up after config.ts loads .env files.
  */
 import * as nearAPI from 'near-api-js';
-import { KeyPair, utils } from 'near-api-js';
+import { KeyPair, providers, transactions } from 'near-api-js';
 
-export interface NearCallResult {
-  tx_hash: string;
-  success: boolean;
-  error?: string;
-  mode: 'REAL_TESTNET' | 'SIMULATION_MODE';
+export type ChainMode = 'testnet' | 'simulation';
+
+/** 60 TGas: request_payment + transfer action + 20 TGas callback, with headroom. */
+const REQUEST_PAYMENT_GAS = 60_000_000_000_000n;
+
+interface NearConfig {
+  networkId: string;
+  rpcUrl: string;
+  vaultContractId: string;
+  agentAccountId: string;
+  agentPrivateKey: string;
 }
+
+function isSet(value: string | undefined): value is string {
+  return !!value && !value.trim().endsWith('...');
+}
+
+export function getNearConfig(): NearConfig {
+  return {
+    networkId: process.env.NEAR_NETWORK || 'testnet',
+    rpcUrl: process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org',
+    vaultContractId: process.env.VAULT_CONTRACT_ID || '',
+    agentAccountId: process.env.AGENT_ACCOUNT_ID || '',
+    agentPrivateKey: process.env.AGENT_PRIVATE_KEY || '',
+  };
+}
+
+export function getChainMode(): ChainMode {
+  if (process.env.NEAR_MODE === 'simulation') return 'simulation';
+  const cfg = getNearConfig();
+  const configured = isSet(cfg.vaultContractId) && isSet(cfg.agentAccountId) && isSet(cfg.agentPrivateKey);
+  if (configured) return 'testnet';
+  if (process.env.NEAR_MODE === 'testnet') {
+    throw new Error('NEAR_MODE=testnet but VAULT_CONTRACT_ID, AGENT_ACCOUNT_ID or AGENT_PRIVATE_KEY is missing.');
+  }
+  return 'simulation';
+}
+
+export class ChainUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ChainUnavailableError';
+  }
+}
+
+// ---------- Contract types (mirror contracts/throttle-vault/src/lib.rs) ----------
+
+export type OnchainRequestStatus = 'PendingApproval' | 'Approved' | 'Executing' | 'Succeeded' | 'Failed' | 'Rejected';
+
+export interface OnchainRequest {
+  request_id: string;
+  agent_id: string;
+  recipient: string;
+  amount: string; // yoctoNEAR
+  risk_score: number;
+  authority_level: string;
+  policy_version: number;
+  status: OnchainRequestStatus;
+  created_at_ns: string;
+  expiry_ns: string;
+  resolved_at_ns: string | null;
+  failure_reason: string | null;
+}
+
+export interface OnchainPolicy {
+  version: number;
+  per_tx_cap: string;
+  daily_budget: string;
+  require_whitelist: boolean;
+  max_risk_for_autonomous: number;
+  policy_signer_pk: string | null;
+  chain_id: string;
+}
+
+export interface OnchainVaultStatus {
+  owner_id: string;
+  is_frozen: boolean;
+  policy: OnchainPolicy;
+  vault_balance: string;
+  storage_reserve: string;
+  reserved_balance: string;
+  available_balance: string;
+  daily_spent: string;
+  daily_remaining: string;
+  approved_agents_count: number;
+  total_requests_count: number;
+}
+
+type RequestOutcome =
+  | { Executing: { request_id: string } }
+  | { HeldForApproval: { request_id: string; reason: string } }
+  | { Rejected: { request_id: string; reason: string } };
 
 export interface RequestPaymentArgs {
   request_id: string;
   recipient: string;
-  amount: string; // yoctoNEAR as string
-  attestation_signature?: string; // hex-encoded
+  amount_yocto: string;
   expiry_ns: string;
-  evidence_hash: string;
   policy_version: number;
+  risk_score: number;
+  authority_level: number;
+  signature_hex: string;
 }
 
-const NEAR_RPC_URL = process.env.NEAR_RPC_URL || 'https://rpc.testnet.near.org';
-const VAULT_CONTRACT_ID = process.env.VAULT_CONTRACT_ID || '';
-const AGENT_ACCOUNT_ID = process.env.AGENT_ACCOUNT_ID || '';
-const AGENT_PRIVATE_KEY = process.env.AGENT_PRIVATE_KEY || '';
-const NETWORK_ID = process.env.NEAR_NETWORK || 'testnet';
+export type SubmissionOutcome =
+  | 'executing' // vault dispatched the transfer (see onchain_request for final status)
+  | 'held' // vault stored the request as PendingApproval
+  | 'rejected' // vault recorded the request as Rejected (cap / level 6)
+  | 'refused' // vault panicked (frozen, bad signature, stale policy...) — tx exists, nothing stored
+  | 'rpc_error'; // could not reach the chain; outcome unknown, nothing assumed
 
-export function isRealNearConfigured(): boolean {
-  return !!(VAULT_CONTRACT_ID && AGENT_ACCOUNT_ID && AGENT_PRIVATE_KEY);
+export interface ChainSubmission {
+  outcome: SubmissionOutcome;
+  tx_hash?: string;
+  reason?: string;
+  onchain_request?: OnchainRequest | null;
 }
 
-/**
- * Returns a NEAR connection and account pre-loaded with the agent's key.
- * Throws if credentials are not set (call isRealNearConfigured() first).
- */
-async function getNearAccount(): Promise<nearAPI.Account> {
+// ---------- Helpers ----------
+
+export function yoctoToNear(yocto: string): number {
+  // Keep 6 decimal places; plenty for display and avoids float overflow.
+  return Number(BigInt(yocto) / 10n ** 18n) / 1e6;
+}
+
+function provider(): providers.JsonRpcProvider {
+  return new providers.JsonRpcProvider({ url: getNearConfig().rpcUrl });
+}
+
+async function viewFunction<T>(methodName: string, args: object = {}): Promise<T> {
+  const cfg = getNearConfig();
+  const result = await provider().query({
+    request_type: 'call_function',
+    finality: 'optimistic',
+    account_id: cfg.vaultContractId,
+    method_name: methodName,
+    args_base64: Buffer.from(JSON.stringify(args)).toString('base64'),
+  });
+  const bytes = (result as unknown as { result: number[] }).result;
+  return JSON.parse(Buffer.from(bytes).toString('utf8')) as T;
+}
+
+async function getAgentAccount(): Promise<nearAPI.Account> {
+  const cfg = getNearConfig();
   const keyStore = new nearAPI.keyStores.InMemoryKeyStore();
-  const keyPair = KeyPair.fromString(AGENT_PRIVATE_KEY as nearAPI.KeyPairString);
-  await keyStore.setKey(NETWORK_ID, AGENT_ACCOUNT_ID, keyPair);
-
-  const config = {
-    networkId: NETWORK_ID,
-    keyStore,
-    nodeUrl: NEAR_RPC_URL,
-    walletUrl: `https://wallet.${NETWORK_ID}.near.org`,
-    helperUrl: `https://helper.${NETWORK_ID}.near.org`,
-  };
-
-  const near = await nearAPI.connect(config);
-  return near.account(AGENT_ACCOUNT_ID);
+  await keyStore.setKey(cfg.networkId, cfg.agentAccountId, KeyPair.fromString(cfg.agentPrivateKey as Parameters<typeof KeyPair.fromString>[0]));
+  const near = await nearAPI.connect({ networkId: cfg.networkId, keyStore, nodeUrl: cfg.rpcUrl });
+  return near.account(cfg.agentAccountId);
 }
 
-/**
- * Call request_payment on the vault contract.
- * Returns a NearCallResult with the real tx hash or SIMULATION_MODE flag.
- */
-export async function callRequestPayment(args: RequestPaymentArgs): Promise<NearCallResult> {
-  if (!isRealNearConfigured()) {
-    // SIMULATION_MODE — no real blockchain calls
-    const fakeHash = `sim-${args.request_id}-${Date.now().toString(36)}`;
-    console.warn(
-      `[NEAR Client] SIMULATION_MODE — no AGENT_PRIVATE_KEY set.\n` +
-      `  Fake tx hash: ${fakeHash}\n` +
-      `  Set AGENT_PRIVATE_KEY, AGENT_ACCOUNT_ID, VAULT_CONTRACT_ID to use real testnet.`
-    );
-    return {
-      tx_hash: fakeHash,
-      success: true,
-      mode: 'SIMULATION_MODE',
-    };
-  }
+/** Pulls the human-readable panic message out of a NEAR Failure status. */
+function extractFailureMessage(failure: unknown): string {
+  const text = JSON.stringify(failure);
+  const panic = text.match(/Smart contract panicked: ([^"\\]+)/);
+  if (panic) return panic[1];
+  const exec = text.match(/"ExecutionError":"([^"]+)"/);
+  return exec ? exec[1] : text;
+}
 
+// ---------- Public API ----------
+
+export async function getVaultStatus(): Promise<OnchainVaultStatus> {
   try {
-    const account = await getNearAccount();
-
-    // 30 TGas for request_payment
-    const GAS = '30000000000000';
-    // No attached deposit — vault is pre-funded by owner
-    const DEPOSIT = '1'; // 1 yoctoNEAR to satisfy payable guard if any
-
-    const result = await account.functionCall({
-      contractId: VAULT_CONTRACT_ID,
-      methodName: 'request_payment',
-      args: {
-        request_id: args.request_id,
-        recipient: args.recipient,
-        amount: args.amount,
-        attestation_signature: args.attestation_signature || null,
-        expiry_ns: args.expiry_ns,
-        evidence_hash: args.evidence_hash,
-        policy_version: args.policy_version,
-      },
-      gas: BigInt(GAS),
-      attachedDeposit: BigInt(DEPOSIT),
-    });
-
-    // near-api-js returns a FinalExecutionOutcome
-    const txHash = result.transaction.hash;
-    const status = result.status;
-
-    const isSuccess =
-      status !== null &&
-      typeof status === 'object' &&
-      'SuccessValue' in status;
-
-    console.log(`[NEAR Client] request_payment tx: ${txHash} success=${isSuccess}`);
-
-    return {
-      tx_hash: txHash,
-      success: isSuccess,
-      mode: 'REAL_TESTNET',
-      error: isSuccess ? undefined : JSON.stringify(status),
-    };
+    return await viewFunction<OnchainVaultStatus>('get_vault_status');
   } catch (err) {
-    const error = (err as Error).message;
-    console.error('[NEAR Client] request_payment failed:', error);
-    return {
-      tx_hash: '',
-      success: false,
-      error,
-      mode: 'REAL_TESTNET',
-    };
+    throw new ChainUnavailableError(`Could not read vault status: ${(err as Error).message}`);
   }
 }
 
-/**
- * View call — read vault state from chain.
- * Uses public RPC, no signing needed.
- */
-export async function viewVaultState(contractId: string = VAULT_CONTRACT_ID): Promise<Record<string, unknown> | null> {
-  if (!contractId) return null;
-  try {
-    const provider = new nearAPI.providers.JsonRpcProvider({ url: NEAR_RPC_URL });
-    const result = await provider.query({
-      request_type: 'call_function',
-      finality: 'final',
-      account_id: contractId,
-      method_name: 'get_policy',
-      args_base64: btoa('{}'),
-    });
+export async function getOnchainRequest(requestId: string): Promise<OnchainRequest | null> {
+  return viewFunction<OnchainRequest | null>('get_request', { request_id: requestId });
+}
 
-    if ('result' in result) {
-      const bytes = (result as { result: number[] }).result;
-      const decoded = Buffer.from(bytes).toString('utf8');
-      return JSON.parse(decoded);
-    }
-    return null;
+/**
+ * Broadcasts request_payment with the agent's function-call key and reports what the
+ * vault actually did. Never retries the broadcast (a retry could double-submit);
+ * only the follow-up read is safe to repeat.
+ */
+export async function submitPaymentRequest(args: RequestPaymentArgs): Promise<ChainSubmission> {
+  const cfg = getNearConfig();
+  let result: providers.FinalExecutionOutcome;
+  try {
+    const account = await getAgentAccount();
+    result = await account.signAndSendTransaction({
+      receiverId: cfg.vaultContractId,
+      actions: [
+        transactions.functionCall(
+          'request_payment',
+          {
+            recipient: args.recipient,
+            amount: args.amount_yocto,
+            request_id: args.request_id,
+            expiry_ns: args.expiry_ns,
+            policy_version: args.policy_version,
+            risk_score: args.risk_score,
+            authority_level_u8: args.authority_level,
+            signature_hex: args.signature_hex,
+          },
+          REQUEST_PAYMENT_GAS,
+          0n // function-call access keys cannot attach deposits
+        ),
+      ],
+      returnError: true,
+    });
   } catch (err) {
-    console.warn('[NEAR Client] viewVaultState failed:', (err as Error).message);
-    return null;
+    const e = err as Error & { context?: { transactionHash?: string } };
+    return { outcome: 'rpc_error', tx_hash: e.context?.transactionHash, reason: e.message };
   }
-}
 
-/**
- * View call — check if a request_id has been executed on-chain already.
- */
-export async function checkRequestExists(requestId: string, contractId: string = VAULT_CONTRACT_ID): Promise<boolean> {
-  if (!contractId) return false;
+  const txHash = result.transaction_outcome.id;
+  const status = result.status as { Failure?: unknown };
+  if (status && typeof status === 'object' && status.Failure) {
+    return { outcome: 'refused', tx_hash: txHash, reason: extractFailureMessage(status.Failure) };
+  }
+
+  const outcome = providers.getTransactionLastResult(result) as RequestOutcome;
+  let onchain: OnchainRequest | null = null;
   try {
-    const provider = new nearAPI.providers.JsonRpcProvider({ url: NEAR_RPC_URL });
-    const args = JSON.stringify({ request_id: requestId });
-    const result = await provider.query({
-      request_type: 'call_function',
-      finality: 'final',
-      account_id: contractId,
-      method_name: 'get_request',
-      args_base64: Buffer.from(args).toString('base64'),
-    });
-
-    if ('result' in result) {
-      const bytes = (result as { result: number[] }).result;
-      const decoded = Buffer.from(bytes).toString('utf8');
-      return decoded !== 'null';
-    }
-    return false;
+    onchain = await getOnchainRequest(args.request_id);
   } catch {
-    return false;
+    onchain = null; // reconciliation will pick it up later
   }
+
+  if ('Executing' in outcome) return { outcome: 'executing', tx_hash: txHash, onchain_request: onchain };
+  if ('HeldForApproval' in outcome) {
+    return { outcome: 'held', tx_hash: txHash, reason: outcome.HeldForApproval.reason, onchain_request: onchain };
+  }
+  return { outcome: 'rejected', tx_hash: txHash, reason: outcome.Rejected.reason, onchain_request: onchain };
 }
 
-/**
- * Deposit NEAR into vault (called by owner, not agent).
- * This is owner-only; the agent key cannot do this.
- */
-export async function getAccountBalance(accountId: string): Promise<string> {
-  try {
-    const provider = new nearAPI.providers.JsonRpcProvider({ url: NEAR_RPC_URL });
-    const account = await provider.query({
-      request_type: 'view_account',
-      finality: 'final',
-      account_id: accountId,
-    });
-    if ('amount' in account) {
-      const yocto = (account as { amount: string }).amount;
-      const near = Number(BigInt(yocto) / 10n ** 21n) / 1000;
-      return `${near.toFixed(3)} NEAR`;
-    }
-    return '0 NEAR';
-  } catch {
-    return 'unknown';
-  }
+export function explorerTxUrl(txHash: string): string {
+  const network = getNearConfig().networkId;
+  return network === 'mainnet' ? `https://nearblocks.io/txns/${txHash}` : `https://testnet.nearblocks.io/txns/${txHash}`;
 }
-

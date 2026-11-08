@@ -2340,7 +2340,6 @@ dependencies = [
  "hex",
  "near-sdk",
  "serde",
- "serde_json",
 ]
 
 [[package]]

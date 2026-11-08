@@ -3,10 +3,33 @@ import { CheckCircle2, Clock, XCircle, AlertTriangle, ArrowUpRight } from 'lucid
 
 interface StatusBadgeProps {
   status: string;
+  /** 'simulation' results were never broadcast and must not read as chain confirmations. */
+  chainMode?: 'testnet' | 'simulation';
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, chainMode }) => {
   const norm = status.toLowerCase();
+
+  if (chainMode === 'simulation' && (norm === 'succeeded' || norm === 'confirmed')) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[6px] border border-border-subtle bg-surface-secondary text-text-secondary text-xs font-medium"
+        title="Simulation mode: no transaction was broadcast"
+      >
+        <AlertTriangle className="w-3.5 h-3.5" />
+        <span>Simulated, not onchain</span>
+      </span>
+    );
+  }
+
+  if (norm === 'expired') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[6px] border border-border-subtle bg-surface-secondary text-text-muted text-xs font-medium">
+        <Clock className="w-3.5 h-3.5" />
+        <span>Approval Expired</span>
+      </span>
+    );
+  }
 
   if (norm === 'succeeded' || norm === 'confirmed') {
     return (

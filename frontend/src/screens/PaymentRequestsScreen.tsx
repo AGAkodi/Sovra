@@ -137,7 +137,7 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
                     {req.reason || req.task_evidence.prompt}
                   </td>
                   <td className="py-3 px-3 font-sans">
-                    <StatusBadge status={req.status} />
+                    <StatusBadge status={req.status} chainMode={req.chain_mode} />
                   </td>
                 </tr>
               ))}

@@ -107,7 +107,9 @@ export const AuditTrailScreen: React.FC<AuditTrailScreenProps> = ({ events }) =>
               <span className="text-text-muted">
                 {new Date(item.timestamp).toISOString().replace('T', ' ').substring(0, 19)} UTC
               </span>
-              {item.tx_hash ? (
+              {item.tx_hash?.startsWith('sim-') ? (
+                <span className="text-text-muted italic text-[10px]">Simulated, no tx</span>
+              ) : item.tx_hash ? (
                 <a
                   href={`https://testnet.nearblocks.io/txns/${item.tx_hash}`}
                   target="_blank"
