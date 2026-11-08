@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { PaymentProposal, RiskEvaluationResult, AuthorityLevel } from '../risk/engine';
+import { REFERENCE, scaled } from '../demo';
 
 export interface StoredVault {
   id: string;
@@ -94,15 +95,16 @@ export class MemoryStore {
       network: 'testnet',
       is_frozen: false,
       policy_version: 1,
-      per_tx_cap_near: 30.0,
-      daily_budget_near: 100.0,
+      per_tx_cap_near: scaled(REFERENCE.perTxCapNear),
+      daily_budget_near: scaled(REFERENCE.dailyBudgetNear),
       daily_spent_near: 0.0,
       require_whitelist: true,
       max_risk_for_autonomous: 69,
       policy_signer_pk: '',
-      vault_balance_near: 100.0,
+      vault_balance_near: scaled(REFERENCE.dailyBudgetNear),
       reserved_balance_near: 0.0,
-      allowed_recipients: ['service-worker.testnet', 'oracle-node.testnet'],
+      // In testnet mode this is replaced by the vault's on-chain whitelist on every sync.
+      allowed_recipients: [process.env.RECIPIENT_ACCOUNT_ID || 'service-worker.testnet', 'oracle-node.testnet'],
     };
     this.vaults.set(vaultId, vault);
 

@@ -48,6 +48,11 @@ export class AutonomousTaskAgent {
     // policy version. If it can't be read, fail closed (ChainUnavailableError propagates).
     const vault = mode === 'testnet' ? await syncVaultFromChain(agent.vault_id) : store.getVault(agent.vault_id);
     if (!vault) throw new Error(`Vault ${agent.vault_id} not found`);
+    if (mode === 'testnet') {
+      // Score against the vault's actual hard limits and whitelist, not local defaults.
+      this.riskEngine.setLimits(vault.per_tx_cap_near, vault.daily_budget_near);
+      this.riskEngine.setWhitelistedRecipients(vault.allowed_recipients);
+    }
 
     const requestId = `req-${uuidv4().replace(/-/g, '').substring(0, 16)}`;
     const now = Date.now();

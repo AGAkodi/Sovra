@@ -59,7 +59,7 @@ export class ChainUnavailableError extends Error {
 
 // ---------- Contract types (mirror contracts/throttle-vault/src/lib.rs) ----------
 
-export type OnchainRequestStatus = 'PendingApproval' | 'Approved' | 'Executing' | 'Succeeded' | 'Failed' | 'Rejected';
+export type OnchainRequestStatus = 'PendingApproval' | 'Approved' | 'Executing' | 'Succeeded' | 'Failed' | 'Rejected' | 'Expired';
 
 export interface OnchainRequest {
   request_id: string;
@@ -179,6 +179,10 @@ export async function getVaultStatus(): Promise<OnchainVaultStatus> {
   } catch (err) {
     throw new ChainUnavailableError(`Could not read vault status: ${(err as Error).message}`);
   }
+}
+
+export async function getAllowedRecipients(): Promise<string[]> {
+  return viewFunction<string[]>('get_allowed_recipients');
 }
 
 export async function getOnchainRequest(requestId: string): Promise<OnchainRequest | null> {

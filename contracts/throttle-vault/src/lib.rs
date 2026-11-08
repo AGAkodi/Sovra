@@ -13,6 +13,9 @@ const DAY_IN_NANOSECONDS: u64 = 86_400 * 1_000_000_000;
 /// Separate from the attestation expiry, which only bounds submission freshness.
 const APPROVAL_TTL_NS: u64 = 3_600 * 1_000_000_000;
 const MAX_REQUEST_ID_LEN: usize = 64;
+/// Events are kept in a fixed-size ring buffer so storage cannot grow without bound.
+/// Full history is still available from the EVENT_JSON logs on-chain.
+const MAX_STORED_EVENTS: u32 = 200;
 /// Domain separator for signed attestations. Must match backend/src/risk/attestation.ts.
 pub const ATTESTATION_DOMAIN: &str = "throttle-attestation-v1";
 
@@ -52,6 +55,17 @@ pub enum RequestStatus {
     Succeeded = 4,
     Failed = 5,
     Rejected = 6,
+    /// Held for approval but the approval window lapsed; reservation released.
+    Expired = 7,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct AgentStatusView {
+    pub agent_id: AccountId,
+    pub approved: bool,
+    pub vault_frozen: bool,
+    pub policy_version: u32,
 }
 
 /// Timestamps are `U64` so they serialize as JSON strings; nanosecond values
@@ -141,7 +155,10 @@ pub struct ThrottleVault {
     pub reserved_balance: NearToken,
     pub requests: LookupMap<String, PaymentRequest>,
     pub request_ids: Vector<String>,
+    /// Ring buffer of the last MAX_STORED_EVENTS events.
     pub recent_events: Vector<VaultEvent>,
+    /// Total events ever emitted; `events_total % MAX_STORED_EVENTS` is the next slot.
+    pub events_total: u64,
 }
 
 /// Canonical attestation message. The backend signer builds the identical string.
@@ -211,6 +228,7 @@ impl ThrottleVault {
             requests: LookupMap::new(b"q"),
             request_ids: Vector::new(b"i"),
             recent_events: Vector::new(b"e"),
+            events_total: 0,
         }
     }
 
@@ -459,6 +477,54 @@ impl ThrottleVault {
         self.emit_event("PaymentRejectedByOwner", Some(request_id), self.owner_id.clone(), reason);
     }
 
+    /// Releases the reservation of a held request whose approval window has lapsed.
+    /// Callable by anyone: it can only ever free funds, never move them.
+    pub fn expire_request(&mut self, request_id: String) {
+        let mut req = self
+            .requests
+            .get(&request_id)
+            .cloned()
+            .unwrap_or_else(|| env::panic_str("Request not found"));
+        require!(
+            req.status == RequestStatus::PendingApproval,
+            "Request is not pending approval"
+        );
+        let now = env::block_timestamp();
+        require!(now > req.expiry_ns.0, "Approval window has not lapsed yet");
+
+        self.reserved_balance = self.reserved_balance.saturating_sub(req.amount);
+        req.status = RequestStatus::Expired;
+        req.resolved_at_ns = Some(U64(now));
+        req.failure_reason = Some("Approval window lapsed".to_string());
+        self.requests.insert(request_id.clone(), req);
+
+        self.emit_event(
+            "PaymentApprovalExpired",
+            Some(request_id),
+            env::predecessor_account_id(),
+            "Reservation released".to_string(),
+        );
+    }
+
+    /// Owner recovery path, separate from agent payments. Can never touch funds
+    /// reserved for in-flight or held requests, or the storage reserve.
+    /// Works while frozen, so the owner can always recover the treasury.
+    pub fn withdraw(&mut self, amount: NearToken) -> Promise {
+        self.assert_owner();
+        require!(amount > NearToken::from_yoctonear(0), "Amount must be > 0");
+        require!(
+            amount <= self.available_balance(),
+            "Amount exceeds unreserved vault balance"
+        );
+        self.emit_event(
+            "OwnerWithdrawal",
+            None,
+            self.owner_id.clone(),
+            format!("Withdrew {}", amount),
+        );
+        Promise::new(self.owner_id.clone()).transfer(amount)
+    }
+
     pub fn freeze(&mut self) {
         self.assert_owner();
         self.is_frozen = true;
@@ -594,10 +660,30 @@ impl ThrottleVault {
             .collect()
     }
 
+    /// Newest first, at most MAX_STORED_EVENTS.
     pub fn get_recent_events(&self, limit: Option<u32>) -> Vec<VaultEvent> {
-        let total = self.recent_events.len();
-        let start = total.saturating_sub(limit.unwrap_or(20));
-        (start..total).rev().filter_map(|i| self.recent_events.get(i).cloned()).collect()
+        let stored = self.recent_events.len() as u64;
+        let take = (limit.unwrap_or(20) as u64).min(stored);
+        let cap = MAX_STORED_EVENTS as u64;
+        (1..=take)
+            .filter_map(|back| {
+                let slot = ((self.events_total - back) % cap) as u32;
+                self.recent_events.get(slot).cloned()
+            })
+            .collect()
+    }
+
+    pub fn get_agent_status(&self, agent_id: AccountId) -> AgentStatusView {
+        AgentStatusView {
+            approved: self.approved_agents.contains(&agent_id),
+            agent_id,
+            vault_frozen: self.is_frozen,
+            policy_version: self.policy_version,
+        }
+    }
+
+    pub fn get_allowed_recipients(&self) -> Vec<AccountId> {
+        self.allowed_recipients.iter().cloned().collect()
     }
 
     pub fn is_agent_approved(&self, agent_id: AccountId) -> bool {
@@ -698,7 +784,13 @@ impl ThrottleVault {
             event_type,
             near_sdk::serde_json::to_string(&event).unwrap_or_default()
         ));
-        self.recent_events.push(event);
+        let slot = (self.events_total % MAX_STORED_EVENTS as u64) as u32;
+        if slot < self.recent_events.len() {
+            self.recent_events.replace(slot, event);
+        } else {
+            self.recent_events.push(event);
+        }
+        self.events_total += 1;
     }
 }
 

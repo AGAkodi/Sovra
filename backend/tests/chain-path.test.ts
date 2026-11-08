@@ -22,6 +22,7 @@ vi.mock('../src/near/client', async (importOriginal) => {
     }),
     submitPaymentRequest: (args: RequestPaymentArgs) => submitMock(args),
     getVaultStatus: () => vaultStatusMock(),
+    getAllowedRecipients: async () => ['service-worker.testnet'],
   };
 });
 

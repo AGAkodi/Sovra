@@ -3,7 +3,7 @@
  * Only used in testnet mode; reads are safe to repeat and never re-broadcast anything.
  */
 import { store, StoredRequest, StoredVault } from '../db/store';
-import { getNearConfig, getOnchainRequest, getVaultStatus, OnchainRequest, yoctoToNear } from './client';
+import { getAllowedRecipients, getNearConfig, getOnchainRequest, getVaultStatus, OnchainRequest, yoctoToNear } from './client';
 
 export function mapOnchainStatus(req: OnchainRequest, nowMs: number = Date.now()): StoredRequest['status'] {
   switch (req.status) {
@@ -18,6 +18,8 @@ export function mapOnchainStatus(req: OnchainRequest, nowMs: number = Date.now()
       return 'failed';
     case 'Rejected':
       return 'rejected';
+    case 'Expired':
+      return 'expired';
   }
 }
 
@@ -25,6 +27,11 @@ export async function syncVaultFromChain(vaultId: string): Promise<StoredVault> 
   const vault = store.getVault(vaultId);
   if (!vault) throw new Error(`Vault ${vaultId} not found`);
   const status = await getVaultStatus();
+  try {
+    vault.allowed_recipients = await getAllowedRecipients();
+  } catch {
+    // Keep the last known whitelist; the vault still enforces its own.
+  }
 
   vault.contract_id = getNearConfig().vaultContractId;
   vault.owner_id = status.owner_id;

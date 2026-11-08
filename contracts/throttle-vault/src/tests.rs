@@ -265,3 +265,81 @@ fn request_id_with_separator_is_rejected() {
     let mut v = setup();
     v.request_payment(worker(), near(3), "req|x".into(), U64(EXPIRY), 1, 10, 1, SIG_ROUTINE.into());
 }
+
+#[test]
+#[should_panic(expected = "Approval window has not lapsed yet")]
+fn expire_before_ttl_is_refused() {
+    let mut v = setup();
+    spike(&mut v);
+    v.expire_request("req-spike".into());
+}
+
+#[test]
+fn expire_after_ttl_releases_reservation() {
+    let mut v = setup();
+    spike(&mut v);
+    assert_eq!(v.reserved_balance, near(25));
+    // Anyone may expire; use an unrelated caller.
+    set_ctx(acc("anyone.testnet"), near(100), NOW + APPROVAL_TTL_NS + 1);
+    v.expire_request("req-spike".into());
+    assert_eq!(v.reserved_balance, near(0));
+    assert_eq!(v.get_request("req-spike".into()).unwrap().status, RequestStatus::Expired);
+}
+
+#[test]
+#[should_panic(expected = "Request is not pending approval")]
+fn executing_request_cannot_be_expired() {
+    let mut v = setup();
+    routine(&mut v);
+    set_ctx(acc("anyone.testnet"), near(100), NOW + APPROVAL_TTL_NS + 1);
+    v.expire_request("req-routine".into());
+}
+
+#[test]
+#[should_panic(expected = "Only vault owner")]
+fn agent_cannot_withdraw() {
+    let mut v = setup();
+    v.withdraw(near(1));
+}
+
+#[test]
+#[should_panic(expected = "Amount exceeds unreserved vault balance")]
+fn withdraw_cannot_touch_reserved_funds() {
+    let mut v = setup();
+    spike(&mut v); // reserves 25 of 100
+    set_ctx(owner(), near(100), NOW);
+    v.withdraw(near(80));
+}
+
+#[test]
+fn owner_can_withdraw_unreserved_funds_while_frozen() {
+    let mut v = setup();
+    set_ctx(owner(), near(100), NOW);
+    v.freeze();
+    let _ = v.withdraw(near(50));
+}
+
+#[test]
+fn event_log_is_bounded_and_newest_first() {
+    let mut v = setup();
+    set_ctx(owner(), near(100), NOW);
+    for i in 0..(MAX_STORED_EVENTS + 25) {
+        v.set_recipient(acc(&format!("r{}.testnet", i)), true);
+    }
+    assert_eq!(v.recent_events.len(), MAX_STORED_EVENTS);
+    let events = v.get_recent_events(Some(3));
+    assert_eq!(events.len(), 3);
+    let last = MAX_STORED_EVENTS + 24;
+    assert!(events[0].details.contains(&format!("r{}.testnet", last)));
+    assert!(events[2].details.contains(&format!("r{}.testnet", last - 2)));
+    assert_eq!(v.get_recent_events(Some(10_000)).len(), MAX_STORED_EVENTS as usize);
+}
+
+#[test]
+fn views_report_agent_and_recipients() {
+    let v = setup();
+    let status = v.get_agent_status(agent());
+    assert!(status.approved);
+    assert!(!status.vault_frozen);
+    assert_eq!(v.get_allowed_recipients(), vec![worker()]);
+}

@@ -63,19 +63,29 @@ export class RiskEngine {
   private whitelistedRecipients: Set<string>;
   private perTxCapNear: number;
   private dailyBudgetNear: number;
+  /** Expected task payment when the agent has no history yet. */
+  private defaultBaselineNear: number;
 
   constructor(
     whitelistedRecipients: string[] = [],
     perTxCapNear: number = 10,
-    dailyBudgetNear: number = 50
+    dailyBudgetNear: number = 50,
+    defaultBaselineNear: number = 3.0
   ) {
     this.whitelistedRecipients = new Set(whitelistedRecipients);
     this.perTxCapNear = perTxCapNear;
     this.dailyBudgetNear = dailyBudgetNear;
+    this.defaultBaselineNear = defaultBaselineNear;
   }
 
   public setWhitelistedRecipients(recipients: string[]): void {
     this.whitelistedRecipients = new Set(recipients);
+  }
+
+  /** Mirror the vault's on-chain hard limits so off-chain scoring never disagrees with them. */
+  public setLimits(perTxCapNear: number, dailyBudgetNear: number): void {
+    this.perTxCapNear = perTxCapNear;
+    this.dailyBudgetNear = dailyBudgetNear;
   }
 
   public evaluateProposal(
@@ -141,15 +151,14 @@ export class RiskEngine {
 
     // 2. Amount Anomaly Calculation vs Baseline
     let amount_risk = 0;
+    const pastAmounts = history.successful_payments.map((p) => p.amount).sort((a, b) => a - b);
+    const baselineMedian = pastAmounts.length > 0
+      ? pastAmounts[Math.floor(pastAmounts.length / 2)]
+      : this.defaultBaselineNear;
     if (proposal.amount_near > this.perTxCapNear) {
       amount_risk = 100;
       reasons.push('EXCEEDS_HARD_PER_TX_CAP');
     } else {
-      const pastAmounts = history.successful_payments.map((p) => p.amount);
-      const baselineMedian = pastAmounts.length > 0
-        ? pastAmounts.sort((a, b) => a - b)[Math.floor(pastAmounts.length / 2)]
-        : 3.0; // Default expected task baseline is 3 NEAR
-
       const ratio = proposal.amount_near / baselineMedian;
       if (ratio > 5) {
         amount_risk = 90;
@@ -276,7 +285,9 @@ export class RiskEngine {
       is_blocked,
       new_trust_score: newTrust,
       feature_snapshot: {
-        baseline_median: 3.0,
+        baseline_median: baselineMedian,
+        baseline_sample_size: pastAmounts.length,
+        per_tx_cap_near: this.perTxCapNear,
         tx_in_last_hour: txInLastHour,
         is_whitelisted: isWhitelisted,
         seen_before: seenBefore,
