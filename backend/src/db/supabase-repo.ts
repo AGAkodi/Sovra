@@ -53,6 +53,7 @@ function toRequest(r: Row): StoredRequest {
     expiry_ns: String(r.expiry_ns),
     resolved_at: optNum(r.resolved_at),
     task_evidence: r.task_evidence as StoredRequest['task_evidence'],
+    agent: (r.agent as StoredRequest['agent']) ?? undefined,
   };
 }
 
@@ -79,6 +80,7 @@ function fromRequest(req: StoredRequest): Row {
     expiry_ns: req.expiry_ns,
     resolved_at: req.resolved_at ?? null,
     task_evidence: req.task_evidence,
+    agent: req.agent ?? null,
   };
 }
 

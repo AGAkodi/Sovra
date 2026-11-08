@@ -4,15 +4,10 @@ import { AttestationSigner } from '../risk/attestation';
 import { repo, store, StoredRequest } from '../db/store';
 import { getChainMode, getNearConfig, submitPaymentRequest, ChainSubmission } from '../near/client';
 import { syncVaultFromChain, mapOnchainStatus } from '../near/sync';
+import { interpretTask, AgentProposal, TaskForInterpretation } from './llm';
 
-export interface TaskJob {
-  taskId: string;
-  title: string;
-  deliverableSummary: string;
-  prompt: string;
-  proposedPayee: string;
-  proposedAmountNear: number;
-}
+/** A completed task to pay for. proposedPayee/proposedAmountNear are the scripted values (and LLM fallback). */
+export type TaskJob = TaskForInterpretation;
 
 export interface TaskPaymentResult {
   proposal: PaymentProposal;
@@ -23,6 +18,8 @@ export interface TaskPaymentResult {
   decidedBy: StoredRequest['decided_by'];
   message: string;
   txHash?: string;
+  /** How the payment was proposed: LLM (with rationale) or scripted fallback. */
+  agent: AgentProposal;
 }
 
 /** Attestations are valid for 5 minutes after signing. */
@@ -44,6 +41,12 @@ export class AutonomousTaskAgent {
     const agent = await repo.getAgent(this.agentId);
     if (!agent) throw new Error(`Agent ${this.agentId} not found`);
 
+    // 1. The agent (LLM, or scripted fallback) interprets the task and proposes a payment.
+    //    It cannot move money; everything below decides whether this proposal is allowed.
+    const agentProposal = await interpretTask(job);
+    const payee = agentProposal.recipient;
+    const amountNear = agentProposal.amount_near;
+
     // In testnet mode the vault contract is the source of truth for freeze state and
     // policy version. If it can't be read, fail closed (ChainUnavailableError propagates).
     const vault = mode === 'testnet' ? await syncVaultFromChain(agent.vault_id) : store.getVault(agent.vault_id);
@@ -57,19 +60,20 @@ export class AutonomousTaskAgent {
     const requestId = `req-${uuidv4().replace(/-/g, '').substring(0, 16)}`;
     const now = Date.now();
     const expiryNs = (BigInt(now + ATTESTATION_TTL_MS) * 1_000_000n).toString();
-    const amountYocto = (BigInt(Math.round(job.proposedAmountNear * 1e6)) * 10n ** 18n).toString();
+    const amountYocto = (BigInt(Math.round(amountNear * 1e6)) * 10n ** 18n).toString();
 
     const proposal: PaymentProposal = {
       agent_id: agent.account_id,
       task_id: job.taskId,
-      recipient: job.proposedPayee,
+      recipient: payee,
       token: 'NEAR',
-      amount_near: job.proposedAmountNear,
+      amount_near: amountNear,
       amount_yocto: amountYocto,
       timestamp: now,
       request_id: requestId,
       task_evidence: {
-        prompt: job.prompt,
+        prompt: job.invoiceText ? `${job.prompt}
+Invoice: ${job.invoiceText}` : job.prompt,
         evidence_hash: `sha256-${Buffer.from(job.deliverableSummary).toString('hex').substring(0, 32)}`,
         completion_summary: job.deliverableSummary,
       },
@@ -102,7 +106,7 @@ export class AutonomousTaskAgent {
       chain_id: getNearConfig().networkId,
       vault_contract_id: vault.contract_id,
       request_id: requestId,
-      recipient: job.proposedPayee,
+      recipient: payee,
       amount_yocto: amountYocto,
       risk_score: evaluation.composite_risk,
       authority_level: evaluation.authority_level,
@@ -115,8 +119,8 @@ export class AutonomousTaskAgent {
       vault_id: vault.id,
       agent_id: agent.id,
       request_id: requestId,
-      recipient: job.proposedPayee,
-      amount_near: job.proposedAmountNear,
+      recipient: payee,
+      amount_near: amountNear,
       amount_yocto: amountYocto,
       risk_score: evaluation.composite_risk,
       authority_level: evaluation.authority_level,
@@ -127,13 +131,14 @@ export class AutonomousTaskAgent {
       task_evidence: proposal.task_evidence,
       chain_mode: mode,
       policy_version: vault.policy_version,
+      agent: agentProposal,
     };
 
     const { request, message } =
       mode === 'testnet'
         ? this.applyChainSubmission(base, evaluation, await submitPaymentRequest({
             request_id: requestId,
-            recipient: job.proposedPayee,
+            recipient: payee,
             amount_yocto: amountYocto,
             expiry_ns: expiryNs,
             policy_version: vault.policy_version,
@@ -152,10 +157,14 @@ export class AutonomousTaskAgent {
       reasons: evaluation.reasons,
       risk: evaluation.composite_risk,
       authority_level: evaluation.authority_level,
-      amount: job.proposedAmountNear,
-      recipient: job.proposedPayee,
+      amount: amountNear,
+      recipient: payee,
       policy_version: vault.policy_version,
       chain_reason: request.chain_reason,
+      agent_mode: agentProposal.mode,
+      agent_model: agentProposal.model,
+      agent_rationale: agentProposal.rationale,
+      agent_fallback_reason: agentProposal.fallback_reason,
     }, request.tx_hash);
 
     return {
@@ -167,6 +176,7 @@ export class AutonomousTaskAgent {
       decidedBy: request.decided_by,
       message,
       txHash: request.tx_hash,
+      agent: agentProposal,
     };
   }
 

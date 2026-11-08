@@ -45,6 +45,7 @@ export interface PaymentRequest {
   chain_reason?: string;
   policy_version?: number;
   last_synced_at?: number;
+  agent?: AgentProposal;
   created_at: number;
   expiry_ns: string;
   resolved_at?: number;
@@ -53,6 +54,17 @@ export interface PaymentRequest {
     evidence_hash: string;
     completion_summary: string;
   };
+}
+
+export interface AgentProposal {
+  recipient: string;
+  amount_near: number;
+  rationale: string;
+  task_category: string;
+  mode: 'llm' | 'scripted';
+  model?: string;
+  fallback_reason?: string;
+  latency_ms?: number;
 }
 
 export interface RiskEvaluation {
@@ -92,6 +104,10 @@ export interface Health {
   status: string;
   network: string;
   chain_mode: 'testnet' | 'simulation';
+  store_mode?: 'memory' | 'supabase';
+  agent_mode?: 'llm' | 'scripted';
+  agent_model?: string | null;
+  demo_scale?: number;
   vault_contract_id: string | null;
   policy_signer: string;
   policy_signer_ephemeral: boolean;

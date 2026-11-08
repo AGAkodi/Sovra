@@ -1,3 +1,4 @@
+import { AgentInfo, scenarioAmount, agentModeLabel } from '../scenarios';
 import React from 'react';
 import { Agent, Vault, PaymentRequest } from '../api/client';
 import { AuthorityPill } from '../components/AuthorityPill';
@@ -19,6 +20,7 @@ interface AgentMonitorScreenProps {
   onRunScenario: (scenario: 'routine' | 'spike' | 'injection') => void;
   isScenarioRunning: boolean;
   onSelectRequest: (req: PaymentRequest) => void;
+  agentInfo: AgentInfo;
 }
 
 export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
@@ -28,6 +30,7 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
   onRunScenario,
   isScenarioRunning,
   onSelectRequest,
+  agentInfo,
 }) => {
   const trustScore = agent?.trust_score ?? 82.5;
   const currentAuthority = agent?.authority_level ?? 1;
@@ -187,21 +190,21 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
               <Activity className="w-4 h-4 text-telemetry-cyan" />
               Interactive Scenario Lab
             </h2>
-            <span className="text-xs text-text-muted">Deterministic Testing</span>
+            <span className={`text-xs ${agentInfo.mode === 'llm' ? 'text-telemetry-cyan' : 'text-text-muted'}`}>{agentModeLabel(agentInfo)}</span>
           </div>
           <p className="text-xs text-text-muted">
-            Execute real-time payment proposals through the autonomous task agent to observe live risk scoring and contract decisions.
+            Task inputs are scripted; {agentInfo.mode === 'llm' ? 'the LLM reads each task and invoice and proposes the payment' : 'the payment proposal uses pre-extracted values'}. Risk scoring and the vault decision are always live.{vault?.is_frozen ? ' The vault is frozen: requests will be refused on-chain.' : ''}
           </p>
 
           <div className="space-y-2.5">
             <button
               onClick={() => onRunScenario('routine')}
-              disabled={isScenarioRunning || vault?.is_frozen}
+              disabled={isScenarioRunning}
               className="w-full p-3 rounded-card bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-left transition-all flex items-center justify-between disabled:opacity-50"
             >
               <div>
                 <div className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
-                  <Play className="w-3.5 h-3.5 text-confirmed-green" /> Routine Microtask Completion (3.0 NEAR)
+                  <Play className="w-3.5 h-3.5 text-confirmed-green" /> Routine Microtask Completion ({scenarioAmount('routine', agentInfo.demoScale)})
                 </div>
                 <div className="text-[11px] text-text-muted mt-0.5">
                   Compute verification · Whitelisted payee · Low risk (L1 Autonomous)
@@ -214,12 +217,12 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
 
             <button
               onClick={() => onRunScenario('spike')}
-              disabled={isScenarioRunning || vault?.is_frozen}
+              disabled={isScenarioRunning}
               className="w-full p-3 rounded-card bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-left transition-all flex items-center justify-between disabled:opacity-50"
             >
               <div>
                 <div className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
-                  <Play className="w-3.5 h-3.5 text-caution-amber" /> Spending Anomaly & Storage Allocation (25.0 NEAR)
+                  <Play className="w-3.5 h-3.5 text-caution-amber" /> Spending Anomaly & Storage Allocation ({scenarioAmount('spike', agentInfo.demoScale)})
                 </div>
                 <div className="text-[11px] text-text-muted mt-0.5">
                   Anomalous amount &gt; baseline · Triggers Level 5 Human Approval hold
@@ -232,12 +235,12 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
 
             <button
               onClick={() => onRunScenario('injection')}
-              disabled={isScenarioRunning || vault?.is_frozen}
+              disabled={isScenarioRunning}
               className="w-full p-3 rounded-card bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-left transition-all flex items-center justify-between disabled:opacity-50"
             >
               <div>
                 <div className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
-                  <Play className="w-3.5 h-3.5 text-blocked-red" /> Adversarial Prompt Injection Attack (80.0 NEAR)
+                  <Play className="w-3.5 h-3.5 text-blocked-red" /> Adversarial Prompt Injection Attack ({scenarioAmount('injection', agentInfo.demoScale)})
                 </div>
                 <div className="text-[11px] text-text-muted mt-0.5">
                   Embedded system override · Attacker recipient · Level 6 Blocked

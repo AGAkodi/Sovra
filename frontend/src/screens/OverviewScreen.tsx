@@ -1,3 +1,4 @@
+import { AgentInfo, scenarioAmount, agentModeLabel } from '../scenarios';
 import React from 'react';
 import {
   Vault,
@@ -24,6 +25,7 @@ interface OverviewScreenProps {
   onRunScenario: (scenario: 'routine' | 'spike' | 'injection') => void;
   isScenarioRunning: boolean;
   onNavigateToTab: (tab: 'agent' | 'payments' | 'approvals' | 'policies') => void;
+  agentInfo: AgentInfo;
   /** Owner "fund vault" control, rendered only in testnet mode. */
   fundControl?: React.ReactNode;
 }
@@ -37,6 +39,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
   isScenarioRunning,
   onNavigateToTab,
   fundControl,
+  agentInfo,
 }) => {
   const successfulCount = requests.filter((r) => r.status === 'succeeded').length;
   const blockedCount = requests.filter((r) => r.status === 'rejected').length;
@@ -226,36 +229,36 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
             <div className="grid grid-cols-1 gap-2">
               <button
                 onClick={() => onRunScenario('routine')}
-                disabled={isScenarioRunning || vault?.is_frozen}
+                disabled={isScenarioRunning}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-control bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-xs text-text-primary transition-colors disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
                   <Play className="w-3.5 h-3.5 text-confirmed-green" />
-                  <span>1. Routine Payment (3 NEAR)</span>
+                  <span>1. Routine Payment ({scenarioAmount('routine', agentInfo.demoScale)})</span>
                 </div>
                 <span className="text-[10px] text-text-muted font-mono">Autonomous</span>
               </button>
 
               <button
                 onClick={() => onRunScenario('spike')}
-                disabled={isScenarioRunning || vault?.is_frozen}
+                disabled={isScenarioRunning}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-control bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-xs text-text-primary transition-colors disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
                   <Play className="w-3.5 h-3.5 text-caution-amber" />
-                  <span>2. Spending Anomaly (25 NEAR)</span>
+                  <span>2. Spending Anomaly ({scenarioAmount('spike', agentInfo.demoScale)})</span>
                 </div>
                 <span className="text-[10px] text-caution-amber font-mono">Holds</span>
               </button>
 
               <button
                 onClick={() => onRunScenario('injection')}
-                disabled={isScenarioRunning || vault?.is_frozen}
+                disabled={isScenarioRunning}
                 className="w-full flex items-center justify-between px-3 py-2 rounded-control bg-surface-secondary hover:bg-surface-secondary/80 border border-border-subtle text-xs text-text-primary transition-colors disabled:opacity-50"
               >
                 <div className="flex items-center gap-2">
                   <Play className="w-3.5 h-3.5 text-blocked-red" />
-                  <span>3. Prompt Injection (80 NEAR)</span>
+                  <span>3. Prompt Injection ({scenarioAmount('injection', agentInfo.demoScale)})</span>
                 </div>
                 <span className="text-[10px] text-blocked-red font-mono">Blocked</span>
               </button>

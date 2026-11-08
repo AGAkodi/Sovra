@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ExternalLink, ShieldCheck, Hash, Terminal, Cpu } from 'lucide-react';
+import { X, ExternalLink, ShieldCheck, Hash, Terminal, Cpu, Bot } from 'lucide-react';
 import { PaymentRequest, RiskEvaluation } from '../api/client';
 import { StatusBadge } from './StatusBadge';
 import { AuthorityPill } from './AuthorityPill';
@@ -102,6 +102,41 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ request, evaluat
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* How the agent proposed this payment */}
+        {request.agent && (
+          <div className="space-y-3">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-text-muted flex items-center gap-1.5">
+              <Bot className="w-4 h-4 text-telemetry-cyan" />
+              Agent Proposal
+            </h3>
+            <div className="p-3.5 rounded-card bg-surface-secondary/60 border border-border-subtle space-y-2 text-xs">
+              <div className="flex justify-between items-center gap-3">
+                <span className="text-text-muted">Proposed by</span>
+                <span className={request.agent.mode === 'llm' ? 'text-telemetry-cyan font-medium text-right' : 'text-text-secondary text-right'}>
+                  {request.agent.mode === 'llm' ? `LLM · ${request.agent.model ?? 'Groq'}` : 'Scripted (no LLM)'}
+                  {request.agent.latency_ms !== undefined && <span className="text-text-muted font-mono"> · {request.agent.latency_ms} ms</span>}
+                </span>
+              </div>
+              <div className="flex justify-between items-center gap-3">
+                <span className="text-text-muted">Proposed payment</span>
+                <span className="font-mono text-text-primary text-right break-all">{request.agent.amount_near} NEAR → {request.agent.recipient}</span>
+              </div>
+              {request.agent.mode === 'llm' && (
+                <div>
+                  <span className="text-text-muted block mb-1">Agent reasoning</span>
+                  <p className="text-text-primary leading-relaxed">{request.agent.rationale}</p>
+                </div>
+              )}
+              {request.agent.fallback_reason && (
+                <p className="text-caution-amber">Scripted fallback used: {request.agent.fallback_reason}</p>
+              )}
+              <p className="text-[11px] text-text-muted pt-1 border-t border-border-subtle/60">
+                The agent only proposes. The risk engine and the vault contract decided the outcome.
+              </p>
             </div>
           </div>
         )}

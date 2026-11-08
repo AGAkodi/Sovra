@@ -13,6 +13,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { WalletProvider, useWallet } from './wallet/WalletContext';
 import { TxToast } from './wallet/TxToast';
 import { FundVaultControl } from './wallet/FundVaultControl';
+import { AgentInfo, DEFAULT_AGENT_INFO } from './scenarios';
 
 const yoctoFromNear = (near: number) => (BigInt(Math.round(near * 1e6)) * 10n ** 18n).toString();
 
@@ -83,6 +84,9 @@ function Shell({ data }: { data: AppData }) {
   const [isScenarioRunning, setIsScenarioRunning] = useState(false);
 
   const testnetMode = health?.chain_mode === 'testnet';
+  const agentInfo: AgentInfo = health
+    ? { mode: health.agent_mode ?? 'scripted', model: health.agent_model ?? null, demoScale: health.demo_scale ?? 1 }
+    : DEFAULT_AGENT_INFO;
   /** Why an owner action can't be signed right now (undefined = allowed). */
   const ownerBlockedReason = !testnetMode
     ? undefined
@@ -238,6 +242,7 @@ function Shell({ data }: { data: AppData }) {
               isScenarioRunning={isScenarioRunning}
               onNavigateToTab={(tab) => setCurrentScreen(tab as ScreenId)}
               fundControl={fundControl}
+              agentInfo={agentInfo}
             />
           )}
 
@@ -249,6 +254,7 @@ function Shell({ data }: { data: AppData }) {
               onRunScenario={handleRunScenario}
               isScenarioRunning={isScenarioRunning}
               onSelectRequest={handleSelectRequest}
+              agentInfo={agentInfo}
             />
           )}
 

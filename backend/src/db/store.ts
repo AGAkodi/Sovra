@@ -9,6 +9,7 @@
  *    otherwise by memory (tests, local simulation).
  */
 import { RiskEvaluationResult, AuthorityLevel } from '../risk/engine';
+import type { AgentProposal } from '../agent/llm';
 import { REFERENCE, scaled } from '../demo';
 import { MemoryRepository } from './memory-repo';
 import { SupabaseRepository } from './supabase-repo';
@@ -75,6 +76,8 @@ export interface StoredRequest {
     evidence_hash: string;
     completion_summary: string;
   };
+  /** How the agent proposed this payment (LLM with rationale, or scripted fallback). */
+  agent?: AgentProposal;
 }
 
 export interface StoredAuditEvent {
