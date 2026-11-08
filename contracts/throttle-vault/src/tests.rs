@@ -322,8 +322,9 @@ fn owner_can_withdraw_unreserved_funds_while_frozen() {
 #[test]
 fn event_log_is_bounded_and_newest_first() {
     let mut v = setup();
-    set_ctx(owner(), near(100), NOW);
     for i in 0..(MAX_STORED_EVENTS + 25) {
+        // Fresh context per call: each is its own transaction with its own gas budget.
+        set_ctx(owner(), near(100), NOW);
         v.set_recipient(acc(&format!("r{}.testnet", i)), true);
     }
     assert_eq!(v.recent_events.len(), MAX_STORED_EVENTS);
