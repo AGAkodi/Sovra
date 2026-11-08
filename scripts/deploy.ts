@@ -96,7 +96,7 @@ function main() {
 
   console.log('# 1. Create accounts (faucet-funded; keys saved to your keychain)');
   for (const id of [owner, vault, agent, recipient, attacker]) {
-    console.log(`near account create-account sponsor-by-faucet-service ${id} autogenerate-new-keypair save-to-keychain network-config ${network} create`);
+    console.log(`near account create-account sponsor-by-faucet-service ${id} autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain network-config ${network} create`);
   }
   console.log('');
 
