@@ -1,5 +1,5 @@
 /**
- * Owner wallet connection (NEAR Wallet Selector v10).
+ * Owner wallet connection (NEAR Wallet Selector v10, Meteor Wallet).
  *
  * Sign-in deliberately requests NO function-call key for the vault: every owner
  * action is a full-access, wallet-confirmed transaction. The contract enforces the
@@ -8,7 +8,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { setupWalletSelector, type WalletSelector } from '@near-wallet-selector/core';
 import { setupModal, type WalletSelectorModal } from '@near-wallet-selector/modal-ui';
-import { setupMyNearWallet } from '@near-wallet-selector/my-near-wallet';
 import { setupMeteorWallet } from '@near-wallet-selector/meteor-wallet';
 import { actionCreators } from '@near-js/transactions';
 import '@near-wallet-selector/modal-ui/styles.css';
@@ -74,7 +73,8 @@ export const WalletProvider: React.FC<{ vaultContractId?: string | null; ownerId
     (async () => {
       const selector = await setupWalletSelector({
         network: NETWORK,
-        modules: [setupMyNearWallet(), setupMeteorWallet()],
+        // MyNearWallet is retired and no longer accepts new app connections (Nov 2026).
+        modules: [setupMeteorWallet()],
       });
       if (cancelled) return;
       selectorRef.current = selector;
