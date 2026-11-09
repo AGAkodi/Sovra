@@ -1,10 +1,11 @@
 # Dashboard screenshots
 
-Captured from the live dashboard (https://sovra-near.vercel.app) against NEAR testnet, no wallet connected, after the UI rebuild described in [design.md](../../design.md).
+Captured from the live site (landing page https://sovra-near.vercel.app, dashboard /app) against NEAR testnet, no wallet connected, after the UI rebuild described in [design.md](../../design.md).
 Regenerate with `node scripts/capture-screenshots.mjs docs/screenshots` (headless Edge; `SHOTS_URL=http://localhost:5173` for a local run).
 
 | File | Screen |
 |---|---|
+| `00-landing.png`, `00-mobile-landing.png` | Landing page, full length: hero with the dial and a held payment, live testnet counts, the problem, how it works, levels, controls, attack proof, FAQ |
 | `01-home.png` | Home: allowance dial, available balance, trust / level / last risk, recent payments, scenarios |
 | `02-agent.png` | Agent: trust over 7 days with the cause of each change, how trust moves, the six levels, baseline facts |
 | `03-payments.png` | Payments: filters with counts, search, plain-language outcomes |

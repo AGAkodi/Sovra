@@ -6,7 +6,8 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 
 | | |
 |---|---|
-| **Dashboard** | https://sovra-near.vercel.app |
+| **Website** | https://sovra-near.vercel.app |
+| **Dashboard** | https://sovra-near.vercel.app/app |
 | **API** | https://throttle-api-mauve.vercel.app/health |
 | **Vault contract** | [`sovra-vault-monarch.testnet`](https://testnet.nearblocks.io/address/sovra-vault-monarch.testnet) |
 | **Security report** | [docs/SECURITY_TESTS.md](docs/SECURITY_TESTS.md) (20 scenarios with tx hashes) |

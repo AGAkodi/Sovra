@@ -13,7 +13,7 @@ The lines in quotes are what you say. Everything else is what you do. Don't read
 
 **Accounts and funds**
 
-1. Open https://sovra-near.vercel.app in Chrome or Edge. Close other tabs and silence notifications.
+1. Open https://sovra-near.vercel.app/app (the dashboard; the site's front page is at https://sovra-near.vercel.app) in Chrome or Edge. Close other tabs and silence notifications.
 2. Click **Connect wallet** (top right) → Meteor. The header should show `sovra-owner-monarch` with a green dot and **Owner**.
 3. On **Home**, check **Available** (the big serif number). A full run needs **at least 3.2 NEAR**. If it's lower, click **Add funds**, enter **1**, click **Deposit**, and approve in Meteor.
 4. Check that **Approvals** has no badge and that the sidebar says **Spending is on** with a **Freeze spending** button.
@@ -135,7 +135,7 @@ Cut these moments from the main take:
 | 20–40 s | Waiting banner → the slip → Meteor approve → toast | "Unusual ones wait for the owner's wallet." |
 | 40–60 s | Hidden instructions → Stopped by the vault → Activity line | "Attacks are refused by the contract itself, with zero funds moved." |
 | 60–75 s | Freeze → refused → unfreeze | "And the owner can stop everything instantly." |
-| 75–85 s | Agent trust line + dashboard URL on screen | "Live on testnet: sovra-near.vercel.app" |
+| 75–85 s | Agent trust line, then the landing page hero + URL on screen | "Live on testnet: sovra-near.vercel.app" |
 
 Add on-screen captions for each line; many viewers watch muted.
 

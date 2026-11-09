@@ -1,6 +1,6 @@
 # Deploying to Vercel
 
-**Live (2026-11-08):** dashboard https://sovra-near.vercel.app · API https://throttle-api-mauve.vercel.app (`/health`). Vercel team `monarchs-projects-cc314129`.
+**Live:** website https://sovra-near.vercel.app, dashboard https://sovra-near.vercel.app/app (rewritten to `index.html` by `frontend/vercel.json`) · API https://throttle-api-mauve.vercel.app (`/health`). Vercel team `monarchs-projects-cc314129`.
 
 > Both projects are connected to `AGAkodi/Sovra`, so pushes to `main` deploy production automatically. The CLI path used for the first deploy: `vercel deploy --prod --yes --project <name>` run from the **repo root** (the projects have Root Directory set; a root `.vercelignore` keeps `.env`, `contracts/`, build output and `node_modules` out of the upload).
 

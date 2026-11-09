@@ -49,7 +49,7 @@ async function viewport(width, height, mobile = false) {
   await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: mobile ? 2 : 1, mobile });
 }
 async function load() {
-  await send('Page.navigate', { url: URL });
+  await send('Page.navigate', { url: `${URL}/app` });
   for (let i = 0; i < 60; i++) {
     await sleep(500);
     const ready = await evaluate(`!!document.querySelector('aside') && !document.querySelector('[aria-busy="true"]')`);
@@ -61,9 +61,9 @@ async function nav(label) {
   await evaluate(`[...document.querySelectorAll('aside button')].find(b => b.textContent.includes(${JSON.stringify(label)}))?.click()`);
   await sleep(1200);
 }
-async function shot(name) {
+async function shot(name, fullPage = false) {
   if (ONLY.length && !ONLY.includes(name)) return;
-  const full = process.env.SHOTS_FULL === '1';
+  const full = fullPage || process.env.SHOTS_FULL === '1';
   const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: full });
   fs.writeFileSync(path.join(OUT, `${name}.png`), Buffer.from(data, 'base64'));
   console.log('saved', name);
@@ -73,6 +73,20 @@ try {
   await send('Page.enable');
   await send('Runtime.enable');
   await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
+
+  // Landing page (document scrolls, so capture the full page)
+  if (!ONLY.length || ONLY.some((n) => n.startsWith('00-'))) {
+    for (const [w, h, mobile, name] of [[1440, 960, false, '00-landing'], [390, 844, true, '00-mobile-landing']]) {
+      await viewport(w, h, mobile);
+      await send('Page.navigate', { url: URL });
+      for (let i = 0; i < 40; i++) {
+        await sleep(500);
+        if (await evaluate(`!!document.querySelector('#faq')`)) break;
+      }
+      await sleep(2500);
+      await shot(name, true);
+    }
+  }
 
   await viewport(1440, 960);
   await load();

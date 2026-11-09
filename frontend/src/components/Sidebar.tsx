@@ -29,7 +29,7 @@ const NAV: { id: ScreenId; label: string; icon: LucideIcon }[] = [
 
 /** The Sovra wordmark with its notch glyph. */
 export const Wordmark: React.FC = () => (
-  <span className="inline-flex items-center gap-2.5">
+  <a href="/" className="inline-flex items-center gap-2.5" aria-label="Sovra home">
     <span className="inline-flex items-end gap-[2px]" aria-hidden="true">
       {[7, 10, 13].map((h) => (
         <span key={h} className="w-[3px] rounded-[1px] bg-brass" style={{ height: h }} />
@@ -37,7 +37,7 @@ export const Wordmark: React.FC = () => (
       <span className="w-[3px] h-[15px] rounded-[1px] bg-line-strong" />
     </span>
     <span className="text-[17px] leading-none font-medium tracking-[-0.01em] text-fg">Sovra</span>
-  </span>
+  </a>
 );
 
 export const Sidebar: React.FC<SidebarProps> = ({
