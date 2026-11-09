@@ -16,9 +16,7 @@
     .st { display: inline-flex; align-items: center; gap: 14px; font-size: 36px; }
     .st i { width: 12px; height: 12px; border-radius: 50%; }
     .green { color: #4cc38a; } .green i { background: #4cc38a; }
-    .ph { position: absolute; border: 2px dashed rgb(237 237 237 / 0.22); border-radius: 18px; background: #19191b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
-    .ph b { font-weight: 500; font-size: 40px; }
-    .ph span { font-size: 28px; color: #85858b; }
+    .rec { position: absolute; left: 160px; top: 270px; width: 1600px; height: 692px; border-radius: 16px; overflow: hidden; border: 1px solid rgb(237 237 237 / 0.08); background: #141415; }
   </style>
 
   <div id="root" data-composition-id="normalday" data-width="1920" data-height="1080">
@@ -44,14 +42,17 @@
       <div id="nd2-cam" style="position: absolute; left: 160px; top: 270px; width: 1600px; transform-origin: 90% 30%">
         <img src="assets/captures/approvals-slip.png" alt="" style="width: 1600px; display: block" />
       </div>
-      <div class="ph" id="nd2-ph" style="left: 460px; top: 300px; width: 1000px; height: 560px; opacity: 0">
-        <b>Your recording</b>
-        <span>Approve and pay, signed in Meteor</span>
+      <!-- The owner's own screen recording: Approve and pay, signed in Meteor, paid -->
+      <div class="rec" id="nd2-rec" style="opacity: 0">
+        <img src="assets/captures/approve-end.png" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover" />
+        <video id="nd2-v1" class="clip" src="assets/approve.mp4" data-start="9.7" data-duration="2.6" data-media-start="0.4" muted playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></video>
+        <video id="nd2-v2" class="clip" src="assets/approve.mp4" data-start="12.3" data-duration="1.8" data-media-start="20.6" muted playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></video>
+        <video id="nd2-v3" class="clip" src="assets/approve.mp4" data-start="14.1" data-duration="1.9" data-media-start="29" muted playsinline style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover"></video>
       </div>
       <div class="card" id="nd2-done" style="left: 1100px; top: 800px; width: 660px; padding: 28px 36px; opacity: 0; box-shadow: 0 24px 48px rgba(0,0,0,0.35)">
         <div class="st green" style="font-size: 32px"><i></i>Done</div>
         <div class="v" style="font-size: 30px; margin-top: 6px">Paid 2.5 NEAR to sovra-worker-monarch</div>
-        <div class="k mono" style="margin-top: 6px">tx 295ye4MV…HrK</div>
+        <div class="k mono" style="margin-top: 6px">tx 5PKiGP…hUyZ</div>
       </div>
     </section>
   </div>
@@ -106,10 +107,10 @@
       tl.fromTo('#nd2', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.0);
       words('#nd2-t', 7.15);
       tl.fromTo('#nd2-cam', { scale: 1, y: 40 }, { scale: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 7.0);
-      tl.to('#nd2-cam', { scale: 1.5, duration: 0.6, ease: 'power2.inOut' }, 9.0);
-      tl.to('#nd2-cam', { scale: 1, opacity: 0.2, filter: 'blur(6px)', duration: 0.5, ease: 'power2.inOut' }, 10.6);
-      tl.fromTo('#nd2-ph', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.8);
-      tl.fromTo('#nd2-done', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 12.6);
+      tl.to('#nd2-cam', { scale: 1.4, duration: 0.6, ease: 'power2.inOut' }, 8.2);
+      tl.to('#nd2-cam', { opacity: 0, duration: 0.3 }, 9.4);
+      tl.fromTo('#nd2-rec', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'expo.out' }, 9.5);
+      tl.fromTo('#nd2-done', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 13.4);
 
       window.__timelines['normalday'] = tl;
     })();
