@@ -9,7 +9,8 @@
     "dev": "ts-node src/server.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "keygen": "ts-node src/scripts/keygen.ts"
+    "keygen": "ts-node src/scripts/keygen.ts",
+    "adversarial": "ts-node src/scripts/adversarial.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
