@@ -215,6 +215,35 @@ function Shell({ data }: { data: AppData }) {
     }
   };
 
+  const handleWithdraw = async (amountNear: number) => {
+    requireOwner();
+    try {
+      await wallet.vaultCall('withdraw', { amount: yoctoFromNear(amountNear) }, { label: `Withdraw ${amountNear} NEAR to your wallet` });
+    } finally {
+      await fetchData();
+    }
+  };
+
+  // A held payment whose approval window lapsed keeps its NEAR reserved on-chain until
+  // someone calls expire_request. The vault lets anyone call it; it can only free funds.
+  const pendingHeld = requests.filter((r) => r.status === 'pending_approval').reduce((s, r) => s + r.amount_near, 0);
+  const lapsedHeld = vault ? Math.max(0, vault.reserved_balance_near - pendingHeld) : 0;
+  const lapsedRequest =
+    lapsedHeld > 0.000001 ? requests.find((r) => r.status === 'expired' && r.amount_near <= lapsedHeld + 0.000001) : undefined;
+
+  const handleReleaseLapsed = async () => {
+    if (!lapsedRequest) return;
+    requireOwner();
+    try {
+      await wallet.vaultCall('expire_request', { request_id: lapsedRequest.request_id }, {
+        label: `Release ${lapsedRequest.amount_near} NEAR held by a lapsed request`,
+        depositYocto: '0',
+      });
+    } finally {
+      await fetchData();
+    }
+  };
+
   const handleUpdatePolicy = async (policy: PolicyDraft) => {
     if (!testnetMode) {
       await api.updatePolicy(policy);
@@ -301,6 +330,9 @@ function Shell({ data }: { data: AppData }) {
                     scenarioRun={scenarioRun}
                     isScenarioRunning={isScenarioRunning}
                     onFund={handleFund}
+                    onWithdraw={handleWithdraw}
+                    lapsedHeldNear={lapsedRequest ? lapsedRequest.amount_near : 0}
+                    onReleaseLapsed={handleReleaseLapsed}
                     fundBlockedReason={ownerBlockedReason}
                   />
                 )}

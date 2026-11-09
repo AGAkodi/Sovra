@@ -28,6 +28,9 @@ interface HomeScreenProps {
   scenarioRun: ScenarioRun | null;
   isScenarioRunning: boolean;
   onFund?: (amountNear: number) => Promise<void>;
+  onWithdraw?: (amountNear: number) => Promise<void>;
+  lapsedHeldNear?: number;
+  onReleaseLapsed?: () => Promise<void>;
   fundBlockedReason?: string;
 }
 
@@ -53,6 +56,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   scenarioRun,
   isScenarioRunning,
   onFund,
+  onWithdraw,
+  lapsedHeldNear = 0,
+  onReleaseLapsed,
   fundBlockedReason,
 }) => {
   const waiting = requests.filter((r) => r.status === 'pending_approval');
@@ -123,7 +129,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 )}
                 <Line label="In the vault" value={`${near(vault.vault_balance_near)} NEAR`} />
               </dl>
-              {testnetMode && onFund && <AddFunds onFund={onFund} blockedReason={fundBlockedReason} />}
+              {testnetMode && onReleaseLapsed && lapsedHeldNear > 0 && (
+                <ReleaseLapsed amount={lapsedHeldNear} onRelease={onReleaseLapsed} blockedReason={fundBlockedReason} />
+              )}
+              {testnetMode && onFund && (
+                <AddFunds onFund={onFund} onWithdraw={onWithdraw} maxWithdraw={available(vault)} blockedReason={fundBlockedReason} />
+              )}
             </>
           ) : (
             <Skeleton className="mt-3 h-16 w-40" />
@@ -212,19 +223,54 @@ const Line: React.FC<{ label: string; value: string; title?: string }> = ({ labe
   </div>
 );
 
-const AddFunds: React.FC<{ onFund: (n: number) => Promise<void>; blockedReason?: string }> = ({ onFund, blockedReason }) => {
-  const [open, setOpen] = useState(false);
+const ReleaseLapsed: React.FC<{ amount: number; onRelease: () => Promise<void>; blockedReason?: string }> = ({ amount, onRelease, blockedReason }) => {
+  const [busy, setBusy] = useState(false);
+  const run = async () => {
+    setBusy(true);
+    try {
+      await onRelease();
+    } catch {
+      // The wallet toast explains what went wrong.
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 flex items-center justify-between gap-3 rounded-control border border-line px-3 py-2">
+      <p className="text-meta text-fg-2">{near(amount)} NEAR is still held by a request whose approval window lapsed</p>
+      <Button variant="secondary" size="sm" busy={busy} onClick={run} disabled={Boolean(blockedReason)} title={blockedReason}>
+        Release
+      </Button>
+    </div>
+  );
+};
+
+const AddFunds: React.FC<{
+  onFund: (n: number) => Promise<void>;
+  onWithdraw?: (n: number) => Promise<void>;
+  maxWithdraw: number;
+  blockedReason?: string;
+}> = ({ onFund, onWithdraw, maxWithdraw, blockedReason }) => {
+  const [open, setOpen] = useState<false | 'deposit' | 'withdraw'>(false);
   const [amount, setAmount] = useState('1');
   const [busy, setBusy] = useState(false);
   const value = Number(amount);
-  const valid = Number.isFinite(value) && value > 0 && value <= 100;
+  const limit = open === 'withdraw' ? maxWithdraw : 100;
+  const valid = Number.isFinite(value) && value > 0 && value <= limit;
 
   if (!open) {
     return (
       <div className="pt-6 flex flex-col gap-2">
-        <Button variant="secondary" size="sm" className="self-start" icon={<Plus className="w-4 h-4" strokeWidth={1.5} />} onClick={() => setOpen(true)} disabled={Boolean(blockedReason)} title={blockedReason}>
-          Add funds
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" icon={<Plus className="w-4 h-4" strokeWidth={1.5} />} onClick={() => setOpen('deposit')} disabled={Boolean(blockedReason)} title={blockedReason}>
+            Add funds
+          </Button>
+          {onWithdraw && (
+            <Button variant="quiet" size="sm" onClick={() => setOpen('withdraw')} disabled={Boolean(blockedReason) || maxWithdraw <= 0} title={blockedReason}>
+              Withdraw
+            </Button>
+          )}
+        </div>
         {blockedReason && <p className="text-meta text-fg-3">{blockedReason}</p>}
       </div>
     );
@@ -235,7 +281,8 @@ const AddFunds: React.FC<{ onFund: (n: number) => Promise<void>; blockedReason?:
     if (!valid) return;
     setBusy(true);
     try {
-      await onFund(value);
+      if (open === 'withdraw' && onWithdraw) await onWithdraw(value);
+      else await onFund(value);
       setOpen(false);
     } catch {
       // The wallet toast explains what went wrong.
@@ -247,7 +294,7 @@ const AddFunds: React.FC<{ onFund: (n: number) => Promise<void>; blockedReason?:
   return (
     <form onSubmit={submit} className="pt-6 flex flex-col gap-2 animate-fade">
       <label htmlFor="add-funds" className="text-caption text-fg-2">
-        Add to the vault
+        {open === 'withdraw' ? 'Withdraw to your wallet' : 'Add to the vault'}
       </label>
       <div className="flex gap-2">
         <div className="relative flex-1">
@@ -255,7 +302,7 @@ const AddFunds: React.FC<{ onFund: (n: number) => Promise<void>; blockedReason?:
             id="add-funds"
             type="number"
             min="0.01"
-            max="100"
+            max={limit}
             step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -265,7 +312,7 @@ const AddFunds: React.FC<{ onFund: (n: number) => Promise<void>; blockedReason?:
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-meta text-fg-3">NEAR</span>
         </div>
         <Button type="submit" variant="primary" busy={busy} disabled={!valid}>
-          Deposit
+          {open === 'withdraw' ? 'Withdraw' : 'Deposit'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => setOpen(false)} disabled={busy}>
           Cancel
