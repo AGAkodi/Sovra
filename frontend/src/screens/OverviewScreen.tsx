@@ -66,15 +66,21 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-card bg-surface-raised border border-border-subtle space-y-1">
           <div className="flex items-center justify-between text-text-muted text-xs">
-            <span>Vault Balance</span>
+            <span>Spendable Balance</span>
             <Coins className="w-4 h-4 text-telemetry-cyan" />
           </div>
           <div className="text-2xl font-bold font-mono tracking-tight text-text-primary">
-            {vault?.vault_balance_near?.toFixed(2) ?? '100.00'}{' '}
+            {vault ? (vault.available_balance_near ?? Math.max(0, vault.vault_balance_near - vault.reserved_balance_near)).toFixed(2) : '—'}{' '}
             <span className="text-xs font-normal text-text-muted">NEAR</span>
           </div>
           <div className="text-[11px] text-text-muted">
-            Reserved: <span className="font-mono text-text-secondary">{vault?.reserved_balance_near?.toFixed(2) || '0.00'}</span> NEAR
+            Total <span className="font-mono text-text-secondary">{vault?.vault_balance_near?.toFixed(2) ?? '—'}</span>
+            {' · '}held <span className="font-mono text-text-secondary">{vault?.reserved_balance_near?.toFixed(2) ?? '0.00'}</span>
+            {vault?.storage_reserve_near !== undefined && (
+              <>
+                {' · '}storage <span className="font-mono text-text-secondary">{vault.storage_reserve_near.toFixed(2)}</span>
+              </>
+            )}
           </div>
         </div>
 

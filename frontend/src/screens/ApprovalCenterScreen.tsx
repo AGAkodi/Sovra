@@ -128,7 +128,7 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
                   <span className={isExpired ? 'text-blocked-red' : expiresMs - now < 10 * 60_000 ? 'text-caution-amber' : 'text-text-secondary'} title={`Approval deadline ${new Date(expiresMs).toISOString()}`}>
                     {formatRemaining(expiresMs - now)}
                   </span>
-                  <span>Vault Balance Available: <span className="text-text-primary">{vault?.vault_balance_near.toFixed(2)} NEAR</span></span>
+                  <span title="Already excludes this request's held amount and the contract's storage reserve">Spendable after holds: <span className="text-text-primary">{vault ? (vault.available_balance_near ?? Math.max(0, vault.vault_balance_near - vault.reserved_balance_near)).toFixed(2) : '—'} NEAR</span></span>
                 </div>
               </div>
 

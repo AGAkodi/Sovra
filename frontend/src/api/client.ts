@@ -13,6 +13,10 @@ export interface Vault {
   policy_signer_pk: string;
   vault_balance_near: number;
   reserved_balance_near: number;
+  /** Testnet: what the agent can actually spend (balance − storage reserve − held requests), from the contract. */
+  available_balance_near?: number;
+  /** Testnet: NEAR locked for the contract's on-chain storage. */
+  storage_reserve_near?: number;
   allowed_recipients: string[];
   /** Testnet: true when the backend could not re-read the contract and served cached state. */
   stale?: boolean;

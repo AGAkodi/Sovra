@@ -45,6 +45,8 @@ export async function syncVaultFromChain(vaultId: string): Promise<StoredVault> 
   vault.policy_signer_pk = status.policy.policy_signer_pk ?? '';
   vault.vault_balance_near = yoctoToNear(status.vault_balance);
   vault.reserved_balance_near = yoctoToNear(status.reserved_balance);
+  vault.available_balance_near = yoctoToNear(status.available_balance);
+  vault.storage_reserve_near = yoctoToNear(status.storage_reserve);
   vault.daily_spent_near = yoctoToNear(status.daily_spent);
   vault.last_synced_at = Date.now();
   store.vaults.set(vault.id, vault);
