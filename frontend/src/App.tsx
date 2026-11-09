@@ -326,6 +326,8 @@ function Shell({ data }: { data: AppData }) {
                     onApprove={handleApprove}
                     onReject={handleReject}
                     ownerBlockedReason={ownerBlockedReason}
+                    onOpenRequest={handleSelectRequest}
+                    onNavigate={(screen) => setCurrentScreen(screen)}
                   />
                 )}
 

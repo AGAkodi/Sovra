@@ -1,18 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { PaymentRequest, Vault } from '../api/client';
-import { Check, X, AlertTriangle, Clock, ShieldAlert, Copy, ExternalLink } from 'lucide-react';
-import { AuthorityPill } from '../components/AuthorityPill';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { api, PaymentRequest, RiskEvaluation, Vault } from '../api/client';
+import { ApprovalSlip } from '../components/ApprovalSlip';
+import { Banner, Card, SectionHead, Sheet } from '../ui/Surface';
+import { Button } from '../ui/Button';
+import { PaymentRow } from '../ui/PaymentRow';
+import { near, shortAccount } from '../design/format';
+import type { ScreenId } from '../components/Sidebar';
 
 interface ApprovalCenterScreenProps {
   requests: PaymentRequest[];
   vault: Vault | null;
   onApprove: (id: string) => Promise<void>;
   onReject: (id: string, reason: string) => Promise<void>;
-  /** When set, approve/reject are disabled and this explains why (e.g. wallet not connected). */
+  /** When set, approve/decline are disabled and this explains why (e.g. wallet not connected). */
   ownerBlockedReason?: string;
+  onOpenRequest: (r: PaymentRequest) => void;
+  onNavigate: (s: ScreenId) => void;
 }
 
-/** Live countdown to the on-chain approval deadline. */
 function useNow(intervalMs = 1000): number {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -22,13 +28,7 @@ function useNow(intervalMs = 1000): number {
   return now;
 }
 
-function formatRemaining(ms: number): string {
-  if (ms <= 0) return 'Expired';
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60);
-  const sec = total % 60;
-  return `${m}:${sec.toString().padStart(2, '0')} left`;
-}
+type Pending = { kind: 'approve' | 'decline'; request: PaymentRequest } | null;
 
 export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
   requests,
@@ -36,243 +36,188 @@ export const ApprovalCenterScreen: React.FC<ApprovalCenterScreenProps> = ({
   onApprove,
   onReject,
   ownerBlockedReason,
+  onOpenRequest,
+  onNavigate,
 }) => {
   const now = useNow();
-  const pendingRequests = requests.filter((r) => r.status === 'pending_approval');
-  const [processingId, setProcessingId] = useState<string | null>(null);
-  const [confirmHighValueId, setConfirmHighValueId] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState<string>('');
-  const [rejectModalId, setRejectModalId] = useState<string | null>(null);
+  const waiting = requests.filter((r) => r.status === 'pending_approval');
+  const decided = useMemo(
+    () =>
+      requests
+        .filter((r) => r.decided_by === 'owner' || r.status === 'expired')
+        .sort((a, b) => (b.resolved_at ?? b.created_at) - (a.resolved_at ?? a.created_at))
+        .slice(0, 5),
+    [requests]
+  );
 
-  const handleApproveClick = async (req: PaymentRequest) => {
-    // Every held request needs an explicit second confirmation bound to amount + recipient.
-    if (confirmHighValueId !== req.id) {
-      setConfirmHighValueId(req.id);
-      return;
-    }
+  // The risk check's reasons live with the evaluation; fetch them for each waiting payment.
+  const [evaluations, setEvaluations] = useState<Record<string, RiskEvaluation | undefined>>({});
+  const waitingKey = waiting.map((r) => r.id).join(',');
+  useEffect(() => {
+    let cancelled = false;
+    waiting.forEach((r) => {
+      if (r.id in evaluations) return;
+      api
+        .getPaymentRequestDetails(r.id)
+        .then((d) => !cancelled && setEvaluations((e) => ({ ...e, [r.id]: d.evaluation })))
+        .catch(() => !cancelled && setEvaluations((e) => ({ ...e, [r.id]: undefined })));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingKey]);
 
-    setProcessingId(req.id);
+  const [pending, setPending] = useState<Pending>(null);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const close = () => {
+    if (busy) return;
+    setPending(null);
+    setReason('');
+    setError(null);
+  };
+
+  const confirm = async () => {
+    if (!pending) return;
+    setBusy(true);
+    setError(null);
     try {
-      await onApprove(req.id);
-      setConfirmHighValueId(null);
+      if (pending.kind === 'approve') await onApprove(pending.request.id);
+      else await onReject(pending.request.id, reason.trim() || 'Declined by the owner in Sovra');
+      setPending(null);
+      setReason('');
     } catch (err) {
-      alert((err as Error).message);
+      setError((err as Error).message);
     } finally {
-      setProcessingId(null);
+      setBusy(false);
     }
   };
 
-  const handleRejectSubmit = async () => {
-    if (!rejectModalId) return;
-    setProcessingId(rejectModalId);
-    try {
-      await onReject(rejectModalId, rejectReason || 'Operator rejected from Approval Center');
-      setRejectModalId(null);
-      setRejectReason('');
-    } catch (err) {
-      alert((err as Error).message);
-    } finally {
-      setProcessingId(null);
-    }
-  };
+  const available = vault ? vault.available_balance_near ?? Math.max(0, vault.vault_balance_near - vault.reserved_balance_near) : undefined;
+  const p = pending?.request;
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-text-primary">Approval Center</h1>
-          <p className="text-xs text-text-muted mt-0.5">
-            Cryptographically enforced human authorization gate for anomalous agent payments
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-caution-amberDim/50 border border-caution-amber/30 text-caution-amber text-xs font-mono font-medium">
-            Pending Decisions: {pendingRequests.length}
-          </span>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8">
+      <header className="animate-rise">
+        <h1 className="font-display text-page text-fg">Approvals</h1>
+        <p className="mt-1 text-caption text-fg-3">
+          {waiting.length === 0 ? 'Nothing waiting' : waiting.length === 1 ? '1 payment is waiting for you' : `${waiting.length} payments are waiting for you`}
+        </p>
+      </header>
 
-      {ownerBlockedReason && pendingRequests.length > 0 && (
-        <div className="p-3 rounded-card bg-caution-amberDim/30 border border-caution-amber/40 text-xs text-caution-amber flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 shrink-0" />
-          <span>{ownerBlockedReason}</span>
-        </div>
+      {ownerBlockedReason && waiting.length > 0 && (
+        <Banner kind="wallet">{ownerBlockedReason.includes('Connect') ? 'Connect your wallet to approve or decline' : ownerBlockedReason}</Banner>
       )}
 
-      {/* Queue of Cards */}
-      <div className="space-y-4">
-        {pendingRequests.map((req) => {
-          const isHighValue = /AMOUNT/.test(req.reason ?? '');
-          const expiresMs = Number(BigInt(req.expiry_ns) / 1_000_000n);
-          const isExpired = expiresMs <= now;
-          const blocked = !!ownerBlockedReason || isExpired;
-          const isProcessing = processingId === req.id;
-          const isConfirming = confirmHighValueId === req.id;
+      {waiting.length > 0 ? (
+        <section className="flex flex-col gap-6" aria-label="Waiting for you">
+          {waiting.map((r) => (
+            <ApprovalSlip
+              key={r.id}
+              request={r}
+              evaluation={evaluations[r.id]}
+              now={now}
+              availableNear={available}
+              blockedReason={ownerBlockedReason}
+              onApprove={() => setPending({ kind: 'approve', request: r })}
+              onDecline={() => setPending({ kind: 'decline', request: r })}
+            />
+          ))}
+        </section>
+      ) : (
+        <Card className="py-16 flex flex-col items-center text-center gap-2 animate-rise">
+          <h2 className="font-display text-[28px] leading-8 text-fg">Nothing is waiting for you</h2>
+          <p className="text-body text-fg-2 max-w-md">
+            When a payment looks unusual, the vault holds the money here until you approve or decline it
+          </p>
+          <Button variant="secondary" size="sm" className="mt-4" onClick={() => onNavigate('payments')}>
+            See payments
+            <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          </Button>
+        </Card>
+      )}
 
-          return (
-            <div
-              key={req.id}
-              className="p-5 rounded-panel bg-surface-raised border border-caution-amber/30 shadow-lg space-y-4 relative overflow-hidden"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border-subtle">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-sm font-semibold text-text-primary">{req.request_id}</span>
-                  <AuthorityPill level={req.authority_level} />
-                  <span className="flex items-center gap-1 text-xs text-caution-amber font-medium">
-                    <Clock className="w-3.5 h-3.5" />
-                    Held for Approval
-                  </span>
-                </div>
-                <div className="flex flex-col items-start md:items-end gap-0.5 text-xs font-mono text-text-muted">
-                  <span className={isExpired ? 'text-blocked-red' : expiresMs - now < 10 * 60_000 ? 'text-caution-amber' : 'text-text-secondary'} title={`Approval deadline ${new Date(expiresMs).toISOString()}`}>
-                    {formatRemaining(expiresMs - now)}
-                  </span>
-                  <span title="Already excludes this request's held amount and the contract's storage reserve">Spendable after holds: <span className="text-text-primary">{vault ? (vault.available_balance_near ?? Math.max(0, vault.vault_balance_near - vault.reserved_balance_near)).toFixed(2) : '—'} NEAR</span></span>
-                </div>
-              </div>
-
-              {/* Core Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-3.5 rounded-card bg-surface-secondary border border-border-subtle">
-                  <span className="text-xs text-text-muted">Payment Amount</span>
-                  <div className="text-2xl font-bold font-mono text-text-primary mt-0.5">
-                    {req.amount_near}{' '}
-                    <span className="text-xs font-normal text-text-muted">NEAR</span>
-                  </div>
-                  {isHighValue && (
-                    <span className="text-[10px] text-caution-amber flex items-center gap-1 mt-1 font-medium">
-                      <AlertTriangle className="w-3 h-3" /> Anomalous High-Value Spike
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-3.5 rounded-card bg-surface-secondary border border-border-subtle md:col-span-2">
-                  <span className="text-xs text-text-muted">Bound Recipient Address</span>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="font-mono text-sm text-telemetry-cyan font-semibold select-all">
-                      {req.recipient}
-                    </span>
-                    <button
-                      onClick={() => navigator.clipboard.writeText(req.recipient)}
-                      className="p-1 rounded hover:bg-surface-hover text-text-muted hover:text-text-primary"
-                      title="Copy Address"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <span className="text-[10px] text-text-muted block mt-1">
-                    Policy Version Bound: On-chain v{req.policy_version ?? '?'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Task Evidence */}
-              <div className="p-3.5 rounded-card bg-[#0B1018] border border-border-subtle space-y-2 text-xs">
-                <span className="text-text-muted font-medium block">Agent Task Justification:</span>
-                <p className="text-text-primary font-mono text-[11px] bg-surface-secondary/40 p-2 rounded">
-                  {req.task_evidence.prompt}
-                </p>
-                <div className="text-text-secondary text-[11px]">
-                  {req.task_evidence.completion_summary}
-                </div>
-                {req.reason && (
-                  <div className="text-caution-amber text-[11px] pt-1">
-                    <span className="font-semibold">Throttle Reason:</span> {req.reason}
-                  </div>
-                )}
-              </div>
-
-              {/* Second Confirmation Warning if High-Value */}
-              {isConfirming && (
-                <div className="p-3 rounded-card bg-caution-amberDim/40 border border-caution-amber text-xs text-caution-amber space-y-1">
-                  <div className="font-semibold flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4" /> You are authorizing only this request
-                  </div>
-                  <p className="text-[11px]">
-                    Your wallet will ask you to sign an irreversible on-chain transfer of{' '}
-                    <span className="font-bold font-mono">{req.amount_near} NEAR</span> strictly to{' '}
-                    <span className="font-mono">{req.recipient}</span>.
-                  </p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setRejectModalId(req.id)}
-                  disabled={isProcessing || blocked}
-                  title={ownerBlockedReason ?? (isExpired ? 'Approval window has lapsed' : undefined)}
-                  className="px-4 py-2 rounded-control bg-blocked-redDim/40 border border-blocked-red/40 text-blocked-red hover:bg-blocked-redDim text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Reject Proposal</span>
-                </button>
-
-                <button
-                  onClick={() => handleApproveClick(req)}
-                  disabled={isProcessing || blocked}
-                  title={ownerBlockedReason ?? (isExpired ? 'Approval window has lapsed' : undefined)}
-                  className="px-5 py-2 rounded-control bg-confirmed-green text-[#0B1018] hover:bg-confirmed-green/90 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-                >
-                  <Check className="w-4 h-4 stroke-[2.5]" />
-                  <span>
-                    {isProcessing
-                      ? 'Waiting for wallet…'
-                      : isConfirming
-                      ? 'Confirm & Sign Transfer'
-                      : 'Approve & Release Funds'}
-                  </span>
-                </button>
-              </div>
+      {decided.length > 0 && (
+        <section className="animate-rise [animation-delay:100ms]">
+          <Card padded={false}>
+            <div className="px-6 pt-6">
+              <SectionHead title="Recent decisions" />
             </div>
-          );
-        })}
+            <div className="divide-y divide-line border-t border-line">
+              {decided.map((r) => (
+                <PaymentRow key={r.id} request={r} onOpen={onOpenRequest} />
+              ))}
+            </div>
+          </Card>
+        </section>
+      )}
 
-        {pendingRequests.length === 0 && (
-          <div className="p-12 rounded-panel bg-surface-raised border border-border-subtle text-center space-y-2">
-            <Check className="w-8 h-8 text-confirmed-green mx-auto mb-1" />
-            <h3 className="text-sm font-semibold text-text-primary">No Pending Approvals</h3>
-            <p className="text-xs text-text-muted max-w-sm mx-auto">
-              All agent proposals are within autonomous policy boundaries or have been reviewed. Trigger Scenario #2 to test human-in-the-loop authorization.
+      <Sheet
+        open={pending?.kind === 'approve'}
+        title={p ? `Pay ${near(p.amount_near)} NEAR to ${shortAccount(p.recipient)}?` : ''}
+        onClose={close}
+        footer={
+          <>
+            <Button variant="quiet" onClick={close} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={confirm} busy={busy}>
+              Approve and pay
+            </Button>
+          </>
+        }
+      >
+        {p && (
+          <div className="flex flex-col gap-3">
+            <p>
+              This releases only this payment, <span className="font-mono text-fg">{near(p.amount_near)} NEAR</span> to{' '}
+              <span className="font-mono text-fg break-all">{p.recipient}</span>. It can’t be undone once it’s paid.
             </p>
+            <p className="text-caption text-fg-3">Your wallet will ask you to sign</p>
+            {error && <p className="text-caption text-negative break-words">{error}</p>}
           </div>
         )}
-      </div>
+      </Sheet>
 
-      {/* Reject Modal */}
-      {rejectModalId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-surface-raised border border-border-subtle rounded-panel p-6 max-w-md w-full space-y-4">
-            <h3 className="text-sm font-semibold text-text-primary">Reject Payment Request</h3>
-            <p className="text-xs text-text-muted">
-              Enter the reason for rejection. The reserved NEAR will be released back to the available vault pool, and the agent's trust score will be penalized.
+      <Sheet
+        open={pending?.kind === 'decline'}
+        title="Decline this payment?"
+        onClose={close}
+        footer={
+          <>
+            <Button variant="quiet" onClick={close} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="danger-fill" onClick={confirm} busy={busy}>
+              Decline
+            </Button>
+          </>
+        }
+      >
+        {p && (
+          <div className="flex flex-col gap-3">
+            <p>
+              The {near(p.amount_near)} NEAR stays in the vault and becomes available again. Declining also lowers the agent’s trust by 15.
             </p>
+            <label htmlFor="decline-reason" className="text-caption text-fg-2">
+              Reason, kept in the activity log (optional)
+            </label>
             <input
-              type="text"
-              placeholder="e.g. Unverified invoice deliverable"
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              className="w-full px-3 py-2 bg-[#0B1018] border border-border-subtle rounded-control text-xs text-text-primary focus:outline-none focus:border-blocked-red"
+              id="decline-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={200}
+              placeholder="Invoice doesn’t match the work"
+              className="h-9 px-3 rounded-control bg-raised border border-line text-body text-fg placeholder:text-fg-3 focus:outline-none focus:border-brass/60"
             />
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setRejectModalId(null)}
-                className="px-3 py-1.5 rounded-control text-xs text-text-muted hover:text-text-primary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRejectSubmit}
-                className="px-4 py-1.5 rounded-control bg-blocked-red text-white text-xs font-semibold hover:bg-blocked-red/90"
-              >
-                Confirm Rejection
-              </button>
-            </div>
+            <p className="text-caption text-fg-3">Your wallet will ask you to sign</p>
+            {error && <p className="text-caption text-negative break-words">{error}</p>}
           </div>
-        </div>
-      )}
+        )}
+      </Sheet>
     </div>
   );
 };
-

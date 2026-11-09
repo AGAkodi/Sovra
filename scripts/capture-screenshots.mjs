@@ -93,6 +93,7 @@ try {
   await load();
   await shot('08-mobile-home');
   await nav('Payments'); await shot('09-mobile-payments');
+  await nav('Approvals'); await shot('10-mobile-approvals');
 } finally {
   ws.close();
   edge.kill();

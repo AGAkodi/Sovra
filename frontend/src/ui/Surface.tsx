@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Snowflake, WifiOff, ArrowRight } from 'lucide-react';
+import { AlertTriangle, Snowflake, WifiOff, ArrowRight, Wallet } from 'lucide-react';
 
 /** A card on the page: surface step plus hairline, no shadow. */
 export const Card: React.FC<React.HTMLAttributes<HTMLDivElement> & { padded?: boolean }> = ({
@@ -38,13 +38,14 @@ export const Stat: React.FC<{ label: string; figure: React.ReactNode; context?: 
   </Card>
 );
 
-type BannerKind = 'waiting' | 'frozen' | 'offline' | 'stale';
+type BannerKind = 'waiting' | 'frozen' | 'offline' | 'stale' | 'wallet';
 
 const BANNER: Record<BannerKind, { cls: string; icon: React.ReactNode }> = {
   waiting: { cls: 'border-brass/40 text-fg', icon: <span className="w-1.5 h-1.5 rounded-full bg-brass" /> },
   frozen: { cls: 'border-frozen/40 text-fg', icon: <Snowflake className="w-4 h-4 text-frozen" strokeWidth={1.5} /> },
   offline: { cls: 'border-negative/40 text-fg', icon: <WifiOff className="w-4 h-4 text-negative" strokeWidth={1.5} /> },
   stale: { cls: 'border-line-strong text-fg-2', icon: <AlertTriangle className="w-4 h-4 text-fg-3" strokeWidth={1.5} /> },
+  wallet: { cls: 'border-line-strong text-fg-2', icon: <Wallet className="w-4 h-4 text-fg-3" strokeWidth={1.5} /> },
 };
 
 export const Banner: React.FC<{ kind: BannerKind; children: React.ReactNode; action?: { label: string; onClick: () => void } }> = ({
