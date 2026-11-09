@@ -20,12 +20,14 @@
   <div id="root" data-composition-id="reveal" data-width="1920" data-height="1080">
     <div id="rv-ring"></div>
     <div id="rv-mark">
-      <div class="rv-notch" id="rv-notch">
-        <span style="height: 52px"></span>
-        <span style="height: 76px"></span>
-        <span style="height: 100px"></span>
-        <span class="off" style="height: 120px"></span>
-      </div>
+      <svg id="rv-mark-s" width="168" height="168" viewBox="-4 0 72 72" fill="none" aria-label="Sovra">
+          <defs>
+            <linearGradient id="rv-mark-s-g" x1="54" y1="8" x2="10" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1EE8F2"/><stop offset=".32" stop-color="#F4FBFC"/><stop offset=".68" stop-color="#F4FBFC"/><stop offset="1" stop-color="#1EE8F2"/></linearGradient>
+            <linearGradient id="rv-mark-s-f" x1="18" y1="29" x2="46" y2="43" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0A3A42" stop-opacity=".9"/><stop offset=".7" stop-color="#0A3A42" stop-opacity="0"/></linearGradient>
+          </defs>
+          <path id="rv-mark-s-s" d="M52 14 42 9q-2-1-4 0L18 19q-10 5 0 10l28 14q10 5 0 10L26 63q-2 1-4 0l-10-5" stroke="url(#rv-mark-s-g)" stroke-width="9" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="rv-mark-s-fold" d="m18 29 28 14" stroke="url(#rv-mark-s-f)" stroke-width="9" opacity="0"/>
+        </svg>
       <div id="rv-word">Sovra</div>
     </div>
     <h2 id="rv-built" data-accent="">So I built Sovra</h2>
@@ -43,7 +45,9 @@
       const tl = gsap.timeline({ paused: true });
       // The key's bow (carried from the last scene) grows, then gives way to the mark.
       tl.fromTo('#rv-ring', { scale: 0.6, opacity: 1 }, { scale: 2.4, opacity: 0, duration: 0.65, ease: 'power2.inOut' }, 0);
-      tl.fromTo('#rv-notch span', { scaleY: 0, transformOrigin: 'bottom center' }, { scaleY: 1, duration: 0.45, ease: 'expo.out', stagger: 0.07 }, 0.35);
+      // The new Sovra mark draws itself along its ribbon, then the fold shades in.
+      tl.fromTo('#rv-mark-s-s', { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.7, ease: 'power2.inOut' }, 0.3);
+      tl.fromTo('#rv-mark-s-fold', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.9);
       tl.fromTo('#rv-word', { opacity: 0, clipPath: 'inset(0 100% 0 0)' }, { opacity: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, 0.6);
       tl.fromTo(split(document.querySelector('#rv-built')), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, 0.9);
       tl.to('#rv-built', { opacity: 0, filter: 'blur(6px)', duration: 0.2 }, 2.3);

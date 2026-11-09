@@ -24,12 +24,14 @@
     <h2 id="en-claim" data-hold>A budget, not a blank cheque</h2>
     <div id="en-card">
       <div id="en-mark">
-        <div class="en-notch">
-          <span id="en-n1" style="height: 62px"></span>
-          <span id="en-n2" style="height: 92px"></span>
-          <span id="en-n3" style="height: 122px"></span>
-          <span id="en-n4" style="height: 146px"></span>
-        </div>
+        <svg id="en-mark-s" width="200" height="200" viewBox="-4 0 72 72" fill="none" aria-label="Sovra">
+          <defs>
+            <linearGradient id="en-mark-s-g" x1="54" y1="8" x2="10" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1EE8F2"/><stop offset=".32" stop-color="#F4FBFC"/><stop offset=".68" stop-color="#F4FBFC"/><stop offset="1" stop-color="#1EE8F2"/></linearGradient>
+            <linearGradient id="en-mark-s-f" x1="18" y1="29" x2="46" y2="43" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0A3A42" stop-opacity=".9"/><stop offset=".7" stop-color="#0A3A42" stop-opacity="0"/></linearGradient>
+          </defs>
+          <path id="en-mark-s-s" d="M52 14 42 9q-2-1-4 0L18 19q-10 5 0 10l28 14q10 5 0 10L26 63q-2 1-4 0l-10-5" stroke="url(#en-mark-s-g)" stroke-width="9" pathLength="1" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+          <path id="en-mark-s-fold" d="m18 29 28 14" stroke="url(#en-mark-s-f)" stroke-width="9" opacity="0"/>
+        </svg>
         <div id="en-word">Sovra</div>
       </div>
       <div id="en-url">sovra-near.vercel.app</div>
@@ -73,7 +75,8 @@
 
       // End card: the notch fills tick by tick, the wordmark wipes in, the address holds.
       tl.fromTo('#en-card', { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.5);
-      ['#en-n1', '#en-n2', '#en-n3'].forEach((n, i) => tl.to(n, { backgroundColor: '#c9a86a', duration: 0.15 }, 5.7 + i * 0.22));
+      tl.fromTo('#en-mark-s-s', { attr: { 'stroke-dashoffset': 1 } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.8, ease: 'power2.inOut' }, 5.6);
+      tl.fromTo('#en-mark-s-fold', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 6.3);
       tl.fromTo('#en-word', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, 6.2);
       tl.fromTo('#en-url', { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.2 }, 7.0);
       tl.fromTo('#en-live', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.3);
