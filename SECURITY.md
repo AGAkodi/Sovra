@@ -2,7 +2,7 @@
 
 ## Threat Model & Security Architecture
 
-Throttle for NEAR is designed to enforce strict, deterministic financial boundaries on autonomous AI agents. The security architecture addresses the following threats:
+Sovra is designed to enforce strict, deterministic financial boundaries on autonomous AI agents. The security architecture addresses the following threats:
 
 ### 1. Rogue or Prompt-Injected Agent Proposals
 - **Threat**: An LLM agent compromised via indirect prompt injection attempts to transfer treasury funds to an attacker-controlled account or drain the vault with an excessive payment.

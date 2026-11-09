@@ -1,4 +1,4 @@
-# Throttle for NEAR - Risk Engine & Authority Model Specification
+# Sovra - Risk Engine & Authority Model Specification
 
 ## 1. Canonical Payment Proposal Schema
 Each agent action creates a cryptographically and contextually bound proposal:
@@ -22,7 +22,7 @@ interface PaymentProposal {
 ```
 
 ## 2. Deterministic Risk Components (0 - 100)
-Risk scoring is strictly deterministic. Off-chain LLMs only generate proposals; the Throttle risk engine scores them using mathematically auditable features:
+Risk scoring is strictly deterministic. Off-chain LLMs only generate proposals; the Sovra risk engine scores them using mathematically auditable features:
 
 | Component | Weight | Calculation | Reason Codes |
 |---|---|---|---|
@@ -51,7 +51,7 @@ If an agent has fewer than 5 successful payments, confidence is low, and a conse
   - Verified on-chain successful payment with owner approval or normal execution: $+2$ trust (capped at 100, maximum $+10$ per 24 hours to prevent rapid artificial trust farming).
 
 ## 4. The Six Authority Levels
-Throttle maps `(Risk Score, Trust Score, Hard Guardrails)` to exactly six authority tiers:
+Sovra maps `(Risk Score, Trust Score, Hard Guardrails)` to exactly six authority tiers:
 
 | Tier | Name | Criteria | Operational Enforcement |
 |---|---|---|---|

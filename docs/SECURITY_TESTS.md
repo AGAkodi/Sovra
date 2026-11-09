@@ -1,4 +1,4 @@
-# Throttle for NEAR: Security & Adversarial Test Report
+# Sovra: Security & Adversarial Test Report
 
 **Verified 2026-11-09 on NEAR testnet.** Vault `sovra-vault-monarch.testnet`, owner `sovra-owner-monarch.testnet`, agent `sovra-agent-monarch.testnet`, risk engine `risk-v2`, vault policy v2.
 

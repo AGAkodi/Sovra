@@ -1,4 +1,4 @@
-# Throttle for NEAR
+# Sovra
 
 **An adaptive spending vault for autonomous AI agents.** The agent can pay for work on its own, but only through a NEAR contract that checks a signed risk decision, enforces hard limits, and hands anything unusual to a human wallet.
 
@@ -20,7 +20,7 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 
 An agent that pays for compute, data or contractor work needs to move money without a person clicking "send" each time. Giving it a wallet key means one prompt injection or bad tool call can empty the treasury. Making every payment wait for a human defeats the point of an agent.
 
-Throttle sits in between. Routine payments go through on their own, unusual ones wait for the owner, and attacks are refused on-chain. The agent's autonomy shrinks or grows with its track record.
+Sovra sits in between. Routine payments go through on their own, unusual ones wait for the owner, and attacks are refused on-chain. The agent's autonomy shrinks or grows with its track record.
 
 ## How it works
 
