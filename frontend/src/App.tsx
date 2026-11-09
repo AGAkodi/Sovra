@@ -344,7 +344,7 @@ function Shell({ data }: { data: AppData }) {
 
                 {currentScreen === 'activity' && <AuditTrailScreen events={events} requests={requests} onOpenRequest={handleSelectRequest} />}
 
-                {currentScreen === 'settings' && <SettingsScreen vault={vault} />}
+                {currentScreen === 'settings' && <SettingsScreen vault={vault} health={health} agent={agent} />}
               </>
             )}
           </div>

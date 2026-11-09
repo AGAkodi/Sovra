@@ -1,92 +1,58 @@
 import React from 'react';
-import { Loader2, X, ExternalLink, Bot } from 'lucide-react';
+import { Loader2, X, ExternalLink } from 'lucide-react';
 import type { ScenarioOutcome } from '../api/client';
 import { StatusText } from '../ui/StatusText';
+import { EXPLORER_TX, near, shortAccount, shortHash } from '../design/format';
 
 export type ScenarioRun =
   | { phase: 'running'; scenario: string }
   | { phase: 'done'; scenario: string; outcome: ScenarioOutcome }
   | { phase: 'error'; scenario: string; error: string };
 
-const EXPLORER = 'https://testnet.nearblocks.io/txns/';
+const NAME: Record<string, string> = { routine: 'Routine invoice', spike: 'Unusual amount', injection: 'Hidden instructions' };
 
-/** Result of the last demo scenario: what the agent proposed and what the vault did. */
+/**
+ * Small floating result, shown only when you leave Home or Agent while a scenario
+ * runs (those screens show the result in place).
+ */
 export const ScenarioResultCard: React.FC<{ run: ScenarioRun | null; onClose: () => void }> = ({ run, onClose }) => {
   if (!run) return null;
-  const title = `${run.scenario.charAt(0).toUpperCase()}${run.scenario.slice(1)} scenario`;
-  const border =
-    run.phase === 'error' ? 'border-blocked-red/40' : run.phase === 'running' ? 'border-telemetry-cyan/40' : 'border-border-subtle';
-
+  const o = run.phase === 'done' ? run.outcome : null;
   return (
     <div
       role="status"
       aria-live="polite"
-      className={`fixed bottom-4 left-4 right-4 sm:right-auto md:left-64 sm:w-[26rem] z-40 p-4 rounded-card bg-surface-raised border ${border} shadow-lg`}
+      className="fixed bottom-4 left-4 right-4 sm:right-auto md:left-[272px] sm:w-96 z-40 p-4 rounded-card bg-card border border-line shadow-lift animate-sheet-in"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5">
-          {run.phase === 'running' ? <Loader2 className="w-4 h-4 text-telemetry-cyan animate-spin" /> : <Bot className="w-4 h-4 text-telemetry-cyan" />}
-        </div>
-        <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium text-text-primary">{title}</p>
-            {run.phase === 'done' && (
-              <StatusText status={run.outcome.requestStatus} chainMode={run.outcome.chainMode} decidedBy={run.outcome.decidedBy} chainReason={run.outcome.message} />
-            )}
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-caption text-fg-2">{NAME[run.scenario] ?? run.scenario}</span>
+            {run.phase === 'running' && <Loader2 className="w-4 h-4 text-fg-3 animate-spin" strokeWidth={1.5} />}
+            {o && <StatusText status={o.requestStatus} decidedBy={o.decidedBy} chainMode={o.chainMode} chainReason={o.message} />}
           </div>
-
-          {run.phase === 'running' && (
-            <p className="text-xs text-text-secondary">Agent is reading the invoice; the risk engine and vault decide next. Testnet calls take a few seconds.</p>
+          {run.phase === 'running' && <p className="text-caption text-fg-3">The agent is reading the invoice</p>}
+          {run.phase === 'error' && <p className="text-caption text-negative break-words">{run.error}</p>}
+          {o &&
+            (o.declined ? (
+              <p className="text-caption text-fg-2">The agent refused this invoice, so nothing was sent</p>
+            ) : (
+              o.agent && (
+                <p className="text-caption text-fg-2">
+                  <span className="font-mono text-fg">{near(o.agent.amount_near)} NEAR</span> to {shortAccount(o.agent.recipient)}
+                </p>
+              )
+            ))}
+          {o?.txHash && !o.txHash.startsWith('sim-') && (
+            <a href={`${EXPLORER_TX}${o.txHash}`} target="_blank" rel="noreferrer" className="self-start inline-flex items-center gap-1.5 text-caption text-fg-2 hover:text-fg">
+              View on NEAR <span className="font-mono text-meta text-fg-3">{shortHash(o.txHash)}</span>
+              <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </a>
           )}
-
-          {run.phase === 'error' && <p className="text-xs text-blocked-red break-words">{run.error}</p>}
-
-          {run.phase === 'done' && (() => {
-            const o = run.outcome;
-            const a = o.agent;
-            return (
-              <div className="space-y-1.5 text-xs">
-                {o.declined ? (
-                  <p className="text-text-secondary">
-                    The agent refused to propose this payment, so nothing was sent to the vault.
-                    {a?.decline_reason && <span className="block mt-1 italic text-text-muted">“{a.decline_reason}”</span>}
-                  </p>
-                ) : (
-                  <>
-                    {a && (
-                      <p className="text-text-secondary">
-                        <span className="text-text-muted">Agent proposed </span>
-                        <span className="font-mono text-text-primary">{a.amount_near} NEAR → {a.recipient}</span>
-                        <span className="text-text-muted"> ({a.mode === 'llm' ? a.model ?? 'LLM' : 'scripted'})</span>
-                      </p>
-                    )}
-                    {o.riskEvaluation && (
-                      <p className="text-text-muted">
-                        Risk {o.riskEvaluation.composite_risk} · Level {o.riskEvaluation.authority_level} ({o.riskEvaluation.authority_name})
-                      </p>
-                    )}
-                    <p className="text-text-secondary break-words">{o.message}</p>
-                    {a?.fallback_reason && <p className="text-caution-amber break-words">{a.fallback_reason}</p>}
-                  </>
-                )}
-                {o.txHash && !o.txHash.startsWith('sim-') && (
-                  <a
-                    href={`${EXPLORER}${o.txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 font-mono text-telemetry-cyan hover:underline"
-                  >
-                    {o.txHash.slice(0, 16)}…
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
-              </div>
-            );
-          })()}
         </div>
         {run.phase !== 'running' && (
-          <button onClick={onClose} aria-label="Dismiss" className="text-text-muted hover:text-text-primary">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} aria-label="Dismiss" className="text-fg-3 hover:text-fg">
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         )}
       </div>

@@ -88,6 +88,7 @@ try {
   await nav('Approvals'); await shot('05-approvals');
   await nav('Limits'); await shot('06-limits');
   await nav('Activity'); await shot('07-activity');
+  await nav('Settings'); await shot('14-settings');
 
   await viewport(390, 844, true);
   await load();

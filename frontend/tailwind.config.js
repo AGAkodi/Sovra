@@ -1,8 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Tokens from design.md section 4. New screens use the "Sovra" tokens only.
-// The "legacy" names below are aliases mapped onto the new palette so screens
-// that have not been rebuilt yet still sit in the same world; remove them once
-// every screen is rebuilt.
+// Tokens from design.md section 4. Every screen uses these and nothing else.
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
@@ -18,16 +15,6 @@ export default {
         positive: '#4cc38a',
         negative: '#e5484d',
         frozen: '#8b95a1',
-
-        // Legacy aliases (pre-rebuild screens)
-        bg: '#141415',
-        surface: { raised: '#19191b', secondary: '#232325', hover: '#2a2a2d' },
-        border: { subtle: '#2a2a2c', active: '#3a3a3d' },
-        telemetry: { cyan: '#c9a86a', cyanDim: '#3a3122' },
-        caution: { amber: '#c9a86a', amberDim: '#3a3122' },
-        blocked: { red: '#e5484d', redDim: '#3d1d1f' },
-        confirmed: { green: '#4cc38a', greenDim: '#17382a' },
-        text: { primary: '#ededed', secondary: '#a1a1a6', muted: '#85858b' },
       },
       fontFamily: {
         sans: ['Geist', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
