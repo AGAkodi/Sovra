@@ -1,8 +1,11 @@
-import React from 'react';
-import { X, ExternalLink, ShieldCheck, Hash, Terminal, Cpu, Bot } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, ExternalLink } from 'lucide-react';
 import { PaymentRequest, RiskEvaluation } from '../api/client';
-import { StatusBadge } from './StatusBadge';
-import { AuthorityPill } from './AuthorityPill';
+import { StatusText } from '../ui/StatusText';
+import { Notch } from '../ui/Notch';
+import { levelInfo } from '../design/levels';
+import { reasonWords, statusWords } from '../design/status';
+import { EXPLORER_TX, near, shortAccount, shortHash, utc } from '../design/format';
 
 interface EvidenceDrawerProps {
   request: PaymentRequest | null;
@@ -10,208 +13,199 @@ interface EvidenceDrawerProps {
   onClose: () => void;
 }
 
-export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ request, evaluation, onClose }) => {
-  if (!request) return null;
+const FACTORS: { key: keyof RiskEvaluation['components']; label: string; weight: number }[] = [
+  { key: 'amount_risk', label: 'Amount compared with usual', weight: 30 },
+  { key: 'recipient_risk', label: 'Recipient', weight: 25 },
+  { key: 'velocity_risk', label: 'How often it pays', weight: 20 },
+  { key: 'evidence_risk', label: 'Proof of the work', weight: 15 },
+  { key: 'failure_risk', label: 'Recent stopped payments', weight: 10 },
+];
+
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <section className="flex flex-col gap-3">
+    <h3 className="text-caption text-fg-3">{title}</h3>
+    {children}
+  </section>
+);
+
+const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div className="flex items-baseline justify-between gap-4 py-2 border-b border-line last:border-b-0">
+    <dt className="text-caption text-fg-3 shrink-0">{label}</dt>
+    <dd className="text-caption text-fg-2 text-right min-w-0 break-all">{children}</dd>
+  </div>
+);
+
+/** Everything about one payment, in the order a person asks: what, why, who decided, proof. */
+export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ request: r, evaluation, onClose }) => {
+  useEffect(() => {
+    if (!r) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [r, onClose]);
+
+  if (!r) return null;
+
+  const level = levelInfo(r.authority_level);
+  const words = statusWords(r.status, r.decided_by, r.chain_mode, r.chain_reason);
+  const reasons = evaluation?.reasons ?? [];
+  const components = evaluation?.components;
+  const topFactor = components ? FACTORS.reduce((a, b) => (components[b.key] * b.weight > components[a.key] * a.weight ? b : a)).key : null;
+  const expiryMs = Number(BigInt(r.expiry_ns || '0') / 1_000_000n);
+  const sim = r.chain_mode === 'simulation';
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm transition-opacity">
-      <div className="w-full max-w-xl bg-surface-raised border-l border-border-subtle h-full overflow-y-auto flex flex-col p-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-border-subtle">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm text-text-muted">{request.request_id}</span>
-              <StatusBadge status={request.status} chainMode={request.chain_mode} decidedBy={request.decided_by} />
-            </div>
-            <h2 className="text-lg font-semibold text-text-primary mt-1">Payment Evidence & Verification</h2>
-          </div>
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={`Payment ${r.request_id}`}>
+      <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
+      <aside className="relative w-full sm:w-[480px] h-full bg-card border-l border-line sm:rounded-l-panel shadow-lift overflow-y-auto animate-drawer-in">
+        <div className="sticky top-0 z-10 bg-card/95 backdrop-blur px-6 h-14 flex items-center justify-between border-b border-line">
+          <span className="text-caption text-fg-3" title={utc(r.created_at)}>
+            Payment · {new Date(r.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </span>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-control text-text-muted hover:text-text-primary hover:bg-surface-secondary border border-border-subtle"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-control text-fg-3 hover:text-fg hover:bg-raised transition-colors duration-hover ease-vault"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Financial Details */}
-        <div className="grid grid-cols-2 gap-4 p-4 rounded-card bg-surface-secondary border border-border-subtle">
-          <div>
-            <span className="text-xs text-text-muted">Proposed Amount</span>
-            <div className="text-xl font-semibold font-mono text-text-primary mt-0.5">
-              {request.amount_near} <span className="text-xs font-normal text-text-muted">NEAR</span>
-            </div>
+        <div className="px-6 py-6 flex flex-col gap-8">
+          {/* What */}
+          <div className="flex flex-col gap-2">
+            <StatusText status={r.status} decidedBy={r.decided_by} chainMode={r.chain_mode} chainReason={r.chain_reason} />
+            <span className="flex items-baseline gap-2">
+              <span className="font-display text-[56px] leading-[56px] tracking-[-0.02em] text-fg">{near(r.amount_near)}</span>
+              <span className="text-caption text-fg-3">NEAR</span>
+            </span>
+            <span className="text-body text-fg-2">
+              to <span className="text-fg">{shortAccount(r.recipient)}</span>
+            </span>
+            <p className="text-caption text-fg-3">{words.detail}</p>
           </div>
-          <div>
-            <span className="text-xs text-text-muted">Target Payee</span>
-            <div className="text-sm font-mono text-telemetry-cyan mt-1 truncate" title={request.recipient}>
-              {request.recipient}
-            </div>
-          </div>
-          <div>
-            <span className="text-xs text-text-muted">Composite Risk</span>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="font-mono text-sm font-semibold">{request.risk_score} / 100</span>
-              <AuthorityPill level={request.authority_level} />
-            </div>
-          </div>
-          <div>
-            <span className="text-xs text-text-muted">Policy Version</span>
-            <div className="text-sm font-mono text-text-secondary mt-1">
-              {request.policy_version ? `On-chain v${request.policy_version}` : 'Not recorded'}
-            </div>
-          </div>
-        </div>
 
-        {/* Deterministic Risk Breakdown */}
-        {evaluation && (
-          <div className="space-y-3">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-telemetry-cyan" />
-              Deterministic Risk Factors
-            </h3>
-            <div className="space-y-2 p-3 rounded-card bg-surface-secondary/60 border border-border-subtle text-xs">
-              <div className="flex justify-between items-center py-1">
-                <span className="text-text-muted">Amount vs Baseline (30%)</span>
-                <span className="font-mono font-medium">{evaluation.components.amount_risk} / 100</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-text-muted">Velocity & Frequency (20%)</span>
-                <span className="font-mono font-medium">{evaluation.components.velocity_risk} / 100</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-text-muted">Recipient Novelty (25%)</span>
-                <span className="font-mono font-medium">{evaluation.components.recipient_risk} / 100</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-text-muted">Task Evidence Quality (15%)</span>
-                <span className="font-mono font-medium">{evaluation.components.evidence_risk} / 100</span>
-              </div>
-              <div className="flex justify-between items-center py-1">
-                <span className="text-text-muted">Historical Failure Rate (10%)</span>
-                <span className="font-mono font-medium">{evaluation.components.failure_risk} / 100</span>
-              </div>
-              {evaluation.reasons.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-border-subtle">
-                  <span className="text-text-muted">Triggered Reasons:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {evaluation.reasons.map((r, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded bg-[#273446]/50 text-text-secondary font-mono text-[10px]">
-                        {r}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* How the agent proposed this payment */}
-        {request.agent && (
-          <div className="space-y-3">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-              <Bot className="w-4 h-4 text-telemetry-cyan" />
-              Agent Proposal
-            </h3>
-            <div className="p-3.5 rounded-card bg-surface-secondary/60 border border-border-subtle space-y-2 text-xs">
-              <div className="flex justify-between items-center gap-3">
-                <span className="text-text-muted">Proposed by</span>
-                <span className={request.agent.mode === 'llm' ? 'text-telemetry-cyan font-medium text-right' : 'text-text-secondary text-right'}>
-                  {request.agent.mode === 'llm' ? `LLM · ${request.agent.model ?? 'Groq'}` : 'Scripted (no LLM)'}
-                  {request.agent.latency_ms !== undefined && <span className="text-text-muted font-mono"> · {request.agent.latency_ms} ms</span>}
-                </span>
-              </div>
-              <div className="flex justify-between items-center gap-3">
-                <span className="text-text-muted">Proposed payment</span>
-                <span className="font-mono text-text-primary text-right break-all">{request.agent.amount_near} NEAR → {request.agent.recipient}</span>
-              </div>
-              {request.agent.mode === 'llm' && (
-                <div>
-                  <span className="text-text-muted block mb-1">Agent reasoning</span>
-                  <p className="text-text-primary leading-relaxed">{request.agent.rationale}</p>
-                </div>
-              )}
-              {request.agent.fallback_reason && (
-                <p className="text-caution-amber">Scripted fallback used: {request.agent.fallback_reason}</p>
-              )}
-              <p className="text-[11px] text-text-muted pt-1 border-t border-border-subtle/60">
-                The agent only proposes. The risk engine and the vault contract decided the outcome.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Task Completion Deliverables */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-medium uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-            <Terminal className="w-4 h-4 text-telemetry-cyan" />
-            Agent Task & Completion Deliverables
-          </h3>
-          <div className="p-3.5 rounded-card bg-[#0B1018] border border-border-subtle space-y-3 text-xs">
-            <div>
-              <span className="text-text-muted block mb-1">Instruction / Prompt:</span>
-              <p className="text-text-primary font-mono bg-surface-secondary/40 p-2 rounded border border-border-subtle/50">
-                {request.task_evidence.prompt}
-              </p>
-            </div>
-            <div>
-              <span className="text-text-muted block mb-1">Deliverable Summary:</span>
-              <p className="text-text-secondary leading-relaxed">
-                {request.task_evidence.completion_summary}
-              </p>
-            </div>
-            <div>
-              <span className="text-text-muted block mb-1 flex items-center gap-1">
-                <Hash className="w-3.5 h-3.5" /> Evidence Digest:
+          {/* Why */}
+          <Section title="Why">
+            <div className="flex items-center gap-3">
+              <Notch level={level.level} />
+              <span className="text-body text-fg">
+                Level {level.level}, {level.name.toLowerCase()}
               </span>
-              <span className="font-mono text-telemetry-cyan text-[11px] select-all break-all">
-                {request.task_evidence.evidence_hash}
-              </span>
+              <span className="ml-auto font-mono text-caption text-fg-2">Risk {r.risk_score}</span>
             </div>
-          </div>
-        </div>
-
-        {/* On-Chain Attestation & Receipt */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-medium uppercase tracking-wider text-text-muted flex items-center gap-1.5">
-            <Cpu className="w-4 h-4 text-confirmed-green" />
-            NEAR Testnet Verification
-          </h3>
-          <div className="p-3.5 rounded-card bg-surface-secondary border border-border-subtle space-y-2 text-xs">
-            <div className="flex justify-between items-center">
-              <span className="text-text-muted">Agent Account:</span>
-              <span className="font-mono text-text-secondary">{request.agent_id}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-text-muted">Expires At:</span>
-              <span className="font-mono text-text-secondary">
-                {new Date(Number(BigInt(request.expiry_ns) / 1000000n)).toISOString()}
-              </span>
-            </div>
-            {request.chain_mode === 'simulation' ? (
-              <div className="pt-2 border-t border-border-subtle text-text-muted italic">
-                Simulation mode: nothing was broadcast to NEAR, so there is no transaction to verify.
-              </div>
-            ) : request.tx_hash ? (
-              <div className="pt-2 border-t border-border-subtle flex justify-between items-center">
-                <span className="text-text-muted">Transaction Hash:</span>
-                <a
-                  href={`https://testnet.nearblocks.io/txns/${request.tx_hash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-mono text-telemetry-cyan hover:underline flex items-center gap-1"
-                >
-                  {request.tx_hash.substring(0, 16)}...
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
+            {reasons.length > 0 ? (
+              <ul className="flex flex-col gap-2">
+                {reasons.map((code) => (
+                  <li key={code} className="text-body text-fg-2 flex gap-2.5">
+                    <span className="mt-2 w-1 h-1 rounded-full bg-fg-3 shrink-0" aria-hidden="true" />
+                    {reasonWords(code)}
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div className="text-text-muted italic pt-1">No transaction hash broadcast yet.</div>
+              <p className="text-body text-fg-2">{evaluation ? 'Nothing unusual about this payment' : 'Loading the risk check'}</p>
             )}
-          </div>
+            {r.chain_reason && r.decided_by !== 'risk_engine' && (
+              <p className="text-caption text-fg-3">
+                Vault: <span className="font-mono">{r.chain_reason}</span>
+              </p>
+            )}
+          </Section>
+
+          {/* Risk factors */}
+          {components && (
+            <Section title="Risk check">
+              <ul className="flex flex-col gap-3">
+                {FACTORS.map((f) => {
+                  const v = components[f.key];
+                  return (
+                    <li key={f.key} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1.5 items-baseline">
+                      <span className="text-caption text-fg-2">
+                        {f.label} <span className="text-fg-3">· {f.weight}%</span>
+                      </span>
+                      <span className="font-mono text-meta text-fg-2">{v}</span>
+                      <span className="col-span-2 h-1 rounded-full bg-raised overflow-hidden" aria-hidden="true">
+                        <span
+                          className={`block h-full rounded-full ${f.key === topFactor && v > 0 ? 'bg-brass' : 'bg-fg-3/60'}`}
+                          style={{ width: `${Math.max(v, v > 0 ? 2 : 0)}%` }}
+                        />
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-meta text-fg-3">Each factor is scored 0–100 and weighted into the overall risk</p>
+            </Section>
+          )}
+
+          {/* What the agent said */}
+          {r.agent && (
+            <Section title="What the agent said">
+              {r.agent.mode === 'llm' && r.agent.rationale && !r.agent.declined && (
+                <blockquote className="text-title text-fg border-l-2 border-brass pl-4">“{r.agent.rationale}”</blockquote>
+              )}
+              {r.agent.declined && <p className="text-body text-fg-2">The agent refused this invoice{r.agent.decline_reason ? `: “${r.agent.decline_reason}”` : ''}</p>}
+              <dl>
+                <Row label="Proposed">
+                  <span className="font-mono">{near(r.agent.amount_near)} NEAR</span> to {shortAccount(r.agent.recipient)}
+                </Row>
+                <Row label="Read by">
+                  {r.agent.mode === 'llm' ? r.agent.model ?? 'LLM' : 'Scripted agent'}
+                  {r.agent.latency_ms !== undefined && <span className="text-fg-3"> · {r.agent.latency_ms} ms</span>}
+                </Row>
+              </dl>
+              {r.agent.fallback_reason && <p className="text-caption text-fg-3">{r.agent.fallback_reason}</p>}
+              <p className="text-meta text-fg-3">The agent only proposes. The risk check and the vault decide</p>
+            </Section>
+          )}
+
+          {/* The task */}
+          <Section title="The task">
+            <p className="font-mono text-meta text-fg-2 whitespace-pre-wrap break-words rounded-control bg-raised border border-line p-4">{r.task_evidence.prompt}</p>
+            {r.task_evidence.completion_summary && <p className="text-body text-fg-2">Delivered: {r.task_evidence.completion_summary}</p>}
+            <p className="font-mono text-meta text-fg-3 break-all" title="Digest of the delivered work">
+              {r.task_evidence.evidence_hash}
+            </p>
+          </Section>
+
+          {/* Proof */}
+          <Section title="Proof">
+            {sim ? (
+              <p className="text-body text-fg-2">Simulation mode: nothing was sent to NEAR, so there is no transaction to check</p>
+            ) : r.tx_hash ? (
+              <a
+                href={`${EXPLORER_TX}${r.tx_hash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="h-11 px-4 rounded-control bg-raised border border-line inline-flex items-center justify-between gap-3 text-body text-fg hover:bg-raised-hover transition-colors duration-hover ease-vault"
+              >
+                View on NEAR
+                <span className="inline-flex items-center gap-2 font-mono text-meta text-fg-3">
+                  {shortHash(r.tx_hash, 8, 6)}
+                  <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
+                </span>
+              </a>
+            ) : (
+              <p className="text-body text-fg-2">No transaction yet</p>
+            )}
+            <dl>
+              <Row label="Request">
+                <span className="font-mono">{r.request_id}</span>
+              </Row>
+              <Row label="Recipient">
+                <span className="font-mono">{r.recipient}</span>
+              </Row>
+              <Row label="Agent">
+                <span className="font-mono">{r.agent_id}</span>
+              </Row>
+              <Row label="Limits version">{r.policy_version ?? '—'}</Row>
+              {r.status === 'pending_approval' && expiryMs > 0 && <Row label="Decide by">{utc(expiryMs)}</Row>}
+              {r.resolved_at && <Row label="Settled">{utc(r.resolved_at)}</Row>}
+            </dl>
+          </Section>
         </div>
-      </div>
+      </aside>
     </div>
   );
 };
-

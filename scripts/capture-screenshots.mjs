@@ -80,7 +80,7 @@ try {
   await nav('Agent'); await shot('02-agent');
   await nav('Payments'); await shot('03-payments');
   // Evidence drawer for the most recent owner-approved spike.
-  await evaluate(`[...document.querySelectorAll('tbody tr')].find(r => r.innerText.includes('Owner approved'))?.click()`);
+  await evaluate(`[...document.querySelectorAll('main button')].find(b => b.innerText.includes('Paid after your approval'))?.click()`);
   await sleep(2000);
   await shot('04-evidence-drawer');
   await evaluate(`document.querySelector('[aria-label="Close"], [aria-label="Close drawer"]')?.click(); document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))`);

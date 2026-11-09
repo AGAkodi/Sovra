@@ -66,11 +66,13 @@ export default {
         rise: { from: { opacity: '0', transform: 'translateY(8px)' }, to: { opacity: '1', transform: 'none' } },
         fade: { from: { opacity: '0' }, to: { opacity: '1' } },
         'sheet-in': { from: { opacity: '0', transform: 'translateY(12px)' }, to: { opacity: '1', transform: 'none' } },
+        'drawer-in': { from: { opacity: '0', transform: 'translateX(24px)' }, to: { opacity: '1', transform: 'none' } },
       },
       animation: {
         rise: 'rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both',
         fade: 'fade 180ms cubic-bezier(0.22, 1, 0.36, 1) both',
         'sheet-in': 'sheet-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'drawer-in': 'drawer-in 360ms cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },

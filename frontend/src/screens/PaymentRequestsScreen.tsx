@@ -1,192 +1,124 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { PaymentRequest } from '../api/client';
-import { StatusBadge } from '../components/StatusBadge';
-import { AuthorityPill } from '../components/AuthorityPill';
-import { Search, Filter, ExternalLink } from 'lucide-react';
+import { Card } from '../ui/Surface';
+import { PaymentRow } from '../ui/PaymentRow';
+import { near } from '../design/format';
 
 interface PaymentRequestsScreenProps {
   requests: PaymentRequest[];
   onSelectRequest: (req: PaymentRequest) => void;
 }
 
-export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
-  requests,
-  onSelectRequest,
-}) => {
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+type Filter = 'all' | 'paid' | 'waiting' | 'stopped' | 'expired';
 
-  const filterChips = [
-    { id: 'all', label: 'All' },
-    { id: 'pending_approval', label: 'Needs Approval' },
-    { id: 'executing', label: 'Executing' },
-    { id: 'succeeded', label: 'Succeeded' },
-    { id: 'rejected', label: 'Blocked / Rejected' },
-    { id: 'failed_expired', label: 'Failed / Expired' },
-  ];
+const FILTERS: { id: Filter; label: string; match: (r: PaymentRequest) => boolean }[] = [
+  { id: 'all', label: 'All', match: () => true },
+  { id: 'paid', label: 'Paid', match: (r) => r.status === 'succeeded' },
+  { id: 'waiting', label: 'Waiting', match: (r) => r.status === 'pending_approval' || r.status === 'executing' },
+  { id: 'stopped', label: 'Stopped', match: (r) => r.status === 'rejected' || r.status === 'failed' },
+  { id: 'expired', label: 'Expired', match: (r) => r.status === 'expired' },
+];
 
-  const filtered = requests.filter((r) => {
-    if (filterStatus === 'failed_expired') {
-      if (r.status !== 'failed' && r.status !== 'expired') return false;
-    } else if (filterStatus !== 'all' && r.status !== filterStatus) {
-      return false;
-    }
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      return (
-        r.request_id.toLowerCase().includes(q) ||
+export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({ requests, onSelectRequest }) => {
+  const [filter, setFilter] = useState<Filter>('all');
+  const [query, setQuery] = useState('');
+
+  const counts = useMemo(
+    () => Object.fromEntries(FILTERS.map((f) => [f.id, requests.filter(f.match).length])) as Record<Filter, number>,
+    [requests]
+  );
+  const paidTotal = useMemo(() => requests.filter((r) => r.status === 'succeeded').reduce((s, r) => s + r.amount_near, 0), [requests]);
+
+  const q = query.trim().toLowerCase();
+  const active = FILTERS.find((f) => f.id === filter)!;
+  const shown = requests.filter(
+    (r) =>
+      active.match(r) &&
+      (!q ||
         r.recipient.toLowerCase().includes(q) ||
-        r.task_evidence.prompt.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+        r.request_id.toLowerCase().includes(q) ||
+        (r.task_evidence?.prompt ?? '').toLowerCase().includes(q) ||
+        (r.agent?.rationale ?? '').toLowerCase().includes(q))
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-text-primary">Payment Requests</h1>
-          <p className="text-xs text-text-muted mt-0.5">Auditable ledger of autonomous agent payment proposals</p>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8">
+      <header className="animate-rise">
+        <h1 className="font-display text-page text-fg">Payments</h1>
+        <p className="mt-1 text-caption text-fg-3">
+          {requests.length} {requests.length === 1 ? 'request' : 'requests'} · {near(paidTotal)} NEAR paid
+        </p>
+      </header>
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-card bg-surface-raised border border-border-subtle">
-        {/* Chips */}
-        <div className="flex flex-wrap gap-1.5">
-          {filterChips.map((chip) => {
-            const isActive = filterStatus === chip.id;
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 animate-rise [animation-delay:50ms]">
+        <div className="inline-flex p-1 rounded-control bg-card border border-line overflow-x-auto self-start max-w-full" role="tablist" aria-label="Filter payments">
+          {FILTERS.map((f) => {
+            const on = filter === f.id;
             return (
               <button
-                key={chip.id}
-                onClick={() => setFilterStatus(chip.id)}
-                className={`px-3 py-1.5 rounded-control text-xs font-medium transition-colors border ${
-                  isActive
-                    ? 'bg-surface-secondary border-telemetry-cyan text-telemetry-cyan'
-                    : 'bg-transparent border-border-subtle text-text-muted hover:text-text-primary hover:bg-surface-secondary/40'
-                }`}
+                key={f.id}
+                role="tab"
+                aria-selected={on}
+                onClick={() => setFilter(f.id)}
+                className={`h-7 px-3 rounded-[6px] text-caption inline-flex items-center gap-2 whitespace-nowrap transition-colors duration-hover ease-vault
+                  ${on ? 'bg-raised text-fg shadow-row-active' : 'text-fg-2 hover:text-fg'}`}
               >
-                {chip.label}
+                {f.label}
+                <span className={`font-mono text-meta ${on ? 'text-fg-2' : 'text-fg-3'}`}>{counts[f.id]}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full md:w-auto md:min-w-[240px]">
-          <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+        <label className="relative w-full md:w-72">
+          <span className="sr-only">Search payments</span>
+          <Search className="w-4 h-4 text-fg-3 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" strokeWidth={1.5} />
           <input
-            type="text"
-            placeholder="Search request ID, payee, prompt..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-[#0B1018] border border-border-subtle rounded-control text-xs text-text-primary focus:outline-none focus:border-telemetry-cyan placeholder:text-text-muted/60 font-mono"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search"
+            className="w-full h-9 pl-9 pr-9 rounded-control bg-card border border-line text-body text-fg placeholder:text-fg-3 focus:outline-none focus:border-brass/60 [&::-webkit-search-cancel-button]:hidden"
           />
-        </div>
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 inline-flex items-center justify-center rounded text-fg-3 hover:text-fg"
+              aria-label="Clear search"
+            >
+              <X className="w-4 h-4" strokeWidth={1.5} />
+            </button>
+          )}
+        </label>
       </div>
 
-      {/* Table */}
-      {/* Phones: one card per request */}
-      <div className="md:hidden space-y-2">
-        {filtered.map((req) => (
-          <button
-            key={req.id}
-            onClick={() => onSelectRequest(req)}
-            className="w-full text-left p-3.5 rounded-card bg-surface-raised border border-border-subtle hover:bg-surface-secondary/60 space-y-2"
-          >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="font-mono text-sm font-semibold text-text-primary">{req.amount_near} NEAR</div>
-                <div className="font-mono text-[11px] text-telemetry-cyan truncate">→ {req.recipient}</div>
-              </div>
-              <StatusBadge status={req.status} chainMode={req.chain_mode} decidedBy={req.decided_by} />
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-[11px]">
-              <AuthorityPill level={req.authority_level} />
-              <span className="font-mono text-text-muted">risk {req.risk_score}</span>
-              <span className="font-mono text-text-muted">{new Date(req.created_at).toISOString().substring(11, 19)} UTC</span>
-            </div>
-            <p className="text-[11px] text-text-muted line-clamp-2">{req.chain_reason || req.reason || req.task_evidence.prompt}</p>
-          </button>
-        ))}
-        {filtered.length === 0 && (
-          <div className="py-12 text-center text-text-muted text-xs">
-            {requests.length === 0 ? 'No payment requests yet. Run a scenario from the Overview to create one.' : 'No requests match this filter.'}
+      <Card padded={false} className="overflow-hidden animate-rise [animation-delay:100ms]">
+        <div
+          className="hidden md:grid grid-cols-[32px_minmax(0,1fr)_112px_200px_112px] gap-x-4 px-6 h-10 items-center border-b border-line text-meta text-fg-3"
+          aria-hidden="true"
+        >
+          <span />
+          <span>Recipient and task</span>
+          <span className="text-right">Amount</span>
+          <span>Outcome</span>
+          <span className="text-right">When</span>
+        </div>
+        {shown.length > 0 ? (
+          <div className="divide-y divide-line">
+            {shown.map((r) => (
+              <PaymentRow key={r.id} request={r} onOpen={onSelectRequest} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-16 px-6 text-center flex flex-col items-center gap-2">
+            <p className="text-body text-fg">{requests.length === 0 ? 'No payments yet' : 'No payments match'}</p>
+            <p className="text-caption text-fg-3">
+              {requests.length === 0 ? 'Run a scenario from Home to see how Sovra handles one' : q ? 'Try another search or filter' : 'Nothing in this group yet'}
+            </p>
           </div>
         )}
-      </div>
-
-      <div className="hidden md:block p-5 rounded-panel bg-surface-raised border border-border-subtle">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead>
-              <tr className="border-b border-border-subtle text-text-muted uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Time (UTC)</th>
-                <th className="py-2.5 px-3">Request ID</th>
-                <th className="py-2.5 px-3">Agent</th>
-                <th className="py-2.5 px-3">Recipient Payee</th>
-                <th className="py-2.5 px-3 text-right">Amount</th>
-                <th className="py-2.5 px-3 text-center">Risk</th>
-                <th className="py-2.5 px-3">Authority</th>
-                <th className="py-2.5 px-3">Reason / Trigger</th>
-                <th className="py-2.5 px-3">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border-subtle/50 font-mono">
-              {filtered.map((req) => (
-                <tr
-                  key={req.id}
-                  onClick={() => onSelectRequest(req)}
-                  className="hover:bg-surface-secondary/60 cursor-pointer transition-colors"
-                >
-                  <td className="py-3 px-3 text-text-muted text-[11px] whitespace-nowrap">
-                    {new Date(req.created_at).toISOString().substring(11, 19)}
-                  </td>
-                  <td className="py-3 px-3 font-semibold text-text-primary">{req.request_id}</td>
-                  <td className="py-3 px-3 text-text-muted truncate max-w-[120px]">{req.agent_id}</td>
-                  <td className="py-3 px-3 text-telemetry-cyan truncate max-w-[140px]">{req.recipient}</td>
-                  <td className="py-3 px-3 text-right font-semibold text-text-primary whitespace-nowrap">
-                    {req.amount_near} NEAR
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <span
-                      className={`font-semibold ${
-                        req.risk_score >= 70
-                          ? 'text-blocked-red'
-                          : req.risk_score >= 40
-                          ? 'text-caution-amber'
-                          : 'text-confirmed-green'
-                      }`}
-                    >
-                      {req.risk_score}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 font-sans">
-                    <AuthorityPill level={req.authority_level} />
-                  </td>
-                  <td className="py-3 px-3 font-sans text-text-muted max-w-xs truncate text-[11px]">
-                    {req.chain_reason || req.reason || req.task_evidence.prompt}
-                  </td>
-                  <td className="py-3 px-3 font-sans">
-                    <StatusBadge status={req.status} chainMode={req.chain_mode} decidedBy={req.decided_by} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {filtered.length === 0 && (
-            <div className="py-12 text-center text-text-muted text-xs">
-              {requests.length === 0
-              ? 'No payment requests yet. Run a scenario from the Overview to create one.'
-              : 'No requests match this filter.'}
-            </div>
-          )}
-        </div>
-      </div>
+      </Card>
     </div>
   );
 };
-
