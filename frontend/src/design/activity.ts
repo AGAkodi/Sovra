@@ -1,4 +1,4 @@
-/** Audit events as one plain sentence each (design.md section 6, Activity). */
+/** Audit events as one plain sentence each (docs/DESIGN.md section 6, Activity). */
 import type { AuditEvent, PaymentRequest } from '../api/client';
 import type { Ink } from './levels';
 import { levelInfo } from './levels';

@@ -80,8 +80,9 @@ backend/                    TypeScript API (Express): risk engine, attestation s
                             NEAR client, reconciler, Supabase store. Deployed as a Vercel function.
 frontend/                   React + Vite + Tailwind dashboard with NEAR Wallet Selector (Meteor)
 supabase/migrations/        Postgres schema (append-only audit_events)
-scripts/                    Testnet setup, owner actions, migrations, screenshots
-docs/                       Risk model, security report, testnet setup, Vercel deploy, screenshots
+scripts/                    Testnet setup, database migrations, screenshots, icons
+docs/                       Risk model, security report, design system, testnet setup, Vercel deploy, screenshots
+video/                      Demo film script and voiceover; video/film/ is the HyperFrames source
 ```
 
 ## Run it locally
@@ -141,6 +142,7 @@ The tests never touch testnet, Supabase or Groq: they force simulation, the in-m
 - [TESTNET_SETUP.md](docs/TESTNET_SETUP.md): accounts, keys, deploy
 - [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md): hosting
 - [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md): video script and shot list
+- [DESIGN.md](docs/DESIGN.md): design system for the landing page and dashboard
 - [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md): build log with evidence
 
 ## License

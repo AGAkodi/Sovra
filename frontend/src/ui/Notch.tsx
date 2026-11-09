@@ -2,7 +2,7 @@ import React from 'react';
 import { levelInfo, INK_BG, LEVELS, Level } from '../design/levels';
 
 /**
- * The throttle notch (design.md signature): six ticks rising like a lever.
+ * The throttle notch (docs/DESIGN.md signature): six ticks rising like a lever.
  * Ticks up to the agent's level are filled in that level's ink.
  */
 export const Notch: React.FC<{ level: number; size?: 's' | 'm' | 'l'; frozen?: boolean; className?: string }> = ({

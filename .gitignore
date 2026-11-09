@@ -38,3 +38,8 @@ Thumbs.db
 
 # Vercel CLI links
 .vercel
+
+# HyperFrames caches and rendered films
+video/film/.thumbnails/
+video/film/.waveform-cache/
+video/film/renders/

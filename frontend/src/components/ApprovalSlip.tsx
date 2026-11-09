@@ -10,7 +10,7 @@ import { near, shortAccount, taskLine, utc } from '../design/format';
 /** The vault releases held funds after this long (contract APPROVAL_TTL_NS). */
 export const APPROVAL_WINDOW_MS = 60 * 60 * 1000;
 
-/** Brass ring counting down the approval window (design.md moment 2). */
+/** Brass ring counting down the approval window (docs/DESIGN.md moment 2). */
 const CountdownRing: React.FC<{ remainingMs: number }> = ({ remainingMs }) => {
   const fraction = Math.max(0, Math.min(1, remainingMs / APPROVAL_WINDOW_MS));
   const minutes = Math.ceil(remainingMs / 60_000);

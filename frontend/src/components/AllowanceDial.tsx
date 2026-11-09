@@ -2,7 +2,7 @@ import React, { useId } from 'react';
 import { near } from '../design/format';
 
 /**
- * The allowance dial (design.md moment 1): a 240° brass gauge of today's spending
+ * The allowance dial (docs/DESIGN.md moment 1): a 240° brass gauge of today's spending
  * against the daily limit, with a needle, fine ticks and a mark at the per-payment limit.
  */
 const CX = 160;

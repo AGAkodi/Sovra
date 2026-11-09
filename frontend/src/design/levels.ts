@@ -1,4 +1,4 @@
-/** The six authority levels, named once (design.md section 2). */
+/** The six authority levels, named once (docs/DESIGN.md section 2). */
 export type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type Ink = 'positive' | 'neutral' | 'brass' | 'negative';

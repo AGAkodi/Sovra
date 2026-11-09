@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-// Tokens from design.md section 4. Every screen uses these and nothing else.
+// Tokens from docs/DESIGN.md section 4. Every screen uses these and nothing else.
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {

@@ -1,4 +1,4 @@
-# design.md: Sovra frontend source of truth
+# Sovra design system: frontend source of truth
 
 Every screen, component and string in `frontend/` follows this file. If code and this file disagree, this file wins. Change the file first, then the code.
 

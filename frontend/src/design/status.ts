@@ -1,4 +1,4 @@
-/** Payment statuses in plain words (design.md section 2 glossary). */
+/** Payment statuses in plain words (docs/DESIGN.md section 2 glossary). */
 import type { PaymentRequest } from '../api/client';
 import type { Ink } from './levels';
 

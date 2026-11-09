@@ -1,6 +1,6 @@
 # Dashboard screenshots
 
-Captured from the live site (landing page https://sovra-near.vercel.app, dashboard /app) against NEAR testnet, no wallet connected, after the UI rebuild described in [design.md](../../design.md).
+Captured from the live site (landing page https://sovra-near.vercel.app, dashboard /app) against NEAR testnet, no wallet connected, after the UI rebuild described in [DESIGN.md](../DESIGN.md).
 Regenerate with `node scripts/capture-screenshots.mjs docs/screenshots` (headless Edge; `SHOTS_URL=http://localhost:5173` for a local run).
 
 | File | Screen |

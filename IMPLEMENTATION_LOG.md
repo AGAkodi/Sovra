@@ -62,7 +62,7 @@
   | spike 2.5 NEAR → worker | 29 / L5 | `PendingApproval`, 2.5 NEAR reserved | [2NKfoKsP…](https://testnet.nearblocks.io/txns/2NKfoKsPyNbAxVUi5pTxVGALKkeZvX9cS5prnWEXLFUV) |
   | injection 8 NEAR → attacker | 92 / L6 | `Rejected` on-chain: exceeds per_tx_cap (attacker balance unchanged) | [9DNbTW9C…](https://testnet.nearblocks.io/txns/9DNbTW9CYdEBirE387As3sjDkTXEkK6UaLTVCSrPVbdT) |
 - Owner action scripts added (`scripts/owner-*.cmd`) as a stopgap until the wallet UI.
-- **Owner approval** of the held 2.5 NEAR spike (via `scripts/owner-approve.cmd`): request `req-c9278a7edd234ea9` → `Succeeded`, worker 10.3 → 12.8 NEAR; backend reconciler updated it to `succeeded` / decided by owner without intervention.
+- **Owner approval** of the held 2.5 NEAR spike (via a command-line owner script, since replaced by wallet signing in the dashboard): request `req-c9278a7edd234ea9` → `Succeeded`, worker 10.3 → 12.8 NEAR; backend reconciler updated it to `succeeded` / decided by owner without intervention.
 - **Freeze**: owner froze the vault; agent routine request refused on-chain ([3Q7vjWeb…](https://testnet.nearblocks.io/txns/3Q7vjWebkxaDsPKbUhEzpg1gLhhqBn4tYYHM7tjiuczp)), no request stored, no funds moved.
 - **Bug found on testnet**: the refusal surfaced as `WebAssembly trap: unreachable`. Cause: near-sdk-env's `panic_str` uses the host `panic_utf8` only under `cfg(near)`, which `cargo near` sets and plain `cargo build` does not. Fixed with `contracts/throttle-vault/.cargo/config.toml`; contract upgraded in place via `setup-vault` (no re-init, state intact, code hash `HbFxt3GB…`). Refusal now reads "Vault is frozen: all agent execution suspended" ([DFkZbfR8…](https://testnet.nearblocks.io/txns/DFkZbfR84RyV9DEN77B7E58xgxnv3NcBzkrVvTwdCS9K)).
 - **Unfreeze** → routine payment executes again ([2TVjvEoF…](https://testnet.nearblocks.io/txns/2TVjvEoFiYwVCrQnoU4kCpWT4TgE4FEBgcwXFe2Dd637)); authority now Level 2 because trust fell after the injection attempt.
@@ -129,5 +129,5 @@
 - Vercel did not auto-deploy one push to `main`; production builds were triggered through the API (`gitSource ref=main`).
 
 ## Phase 9: UI rebuild (2026-11-09)
-- `design.md` signed off (Sovra name, vault-room direction with brass accent, code-led). Rebuilt so far: foundation and shell, Home (allowance dial), Approvals (slip with countdown ring).
+- `docs/DESIGN.md` signed off (Sovra name, vault-room direction with brass accent, code-led). Rebuilt so far: foundation and shell, Home (allowance dial), Approvals (slip with countdown ring).
 - New decline dialog tested end to end from the hosted dashboard: [2g3vTLWv…](https://testnet.nearblocks.io/txns/2g3vTLWv9F4EWik9siwodv1UA5SgX1FgyXNqWynrZE1M) → vault `Rejected` ("Declined by the owner in Sovra"), app `rejected` / `decided_by: owner`, and the risk engine's owner-rejection penalty applied once (`TrustUpdated` −15, 24.1 → 9.1).
