@@ -1,0 +1,80 @@
+[
+  {
+    "id": "vo-01",
+    "scene": "incidents",
+    "at": 0.3,
+    "text": "In November 2024, an AI agent guarding a prize pool of about forty-seven thousand dollars was talked into giving all of it away."
+  },
+  {
+    "id": "vo-02",
+    "scene": "incidents",
+    "at": 10.3,
+    "text": "In March, someone broke into another agent's dashboard, and fifty-five and a half ETH walked out the door."
+  },
+  {
+    "id": "vo-03",
+    "scene": "incidents",
+    "at": 17.3,
+    "text": "Researchers then showed that one planted memory could make an agent pay an attacker."
+  },
+  {
+    "id": "vo-04",
+    "scene": "incidents",
+    "at": 22.9,
+    "text": "Every one of these agents could move the money itself."
+  },
+  {
+    "id": "vo-05",
+    "scene": "reveal",
+    "at": 0.4,
+    "text": "That's why Sovra exists. Your agent can pay, but you keep the final say."
+  },
+  {
+    "id": "vo-06",
+    "scene": "replays",
+    "at": 0.4,
+    "text": "Here's the same trick, live on NEAR testnet. The invoice hides an instruction. The model refuses, and when we force it through anyway, the vault rejects it on-chain."
+  },
+  {
+    "id": "vo-07",
+    "scene": "replays",
+    "at": 11.8,
+    "text": "Swap the recipient after the decision is signed, and the signature no longer matches. Refused. Nothing moves."
+  },
+  {
+    "id": "vo-08",
+    "scene": "replays",
+    "at": 21.8,
+    "text": "And if the controls are compromised, the agent's key can still only ask. One signature from the owner's wallet freezes everything."
+  },
+  {
+    "id": "vo-09",
+    "scene": "normalday",
+    "at": 0.3,
+    "text": "On a normal day, routine invoices just get paid, and the agent earns trust each time NEAR confirms one."
+  },
+  {
+    "id": "vo-10",
+    "scene": "normalday",
+    "at": 7.2,
+    "text": "Anything unusual waits in the vault, with a countdown, until you approve it from your own wallet."
+  },
+  {
+    "id": "vo-11",
+    "scene": "payoff",
+    "at": 0.3,
+    "text": "The vault was attacked nine different ways. Every attempt was refused, and not a single NEAR moved."
+  },
+  {
+    "id": "vo-12",
+    "scene": "ending",
+    "at": 0.6,
+    "text": "Give your agent a budget. Not a blank cheque."
+  },
+  {
+    "id": "vo-13",
+    "scene": "ending",
+    "at": 5.8,
+    "text": "Sovra. Live now on NEAR testnet."
+  }
+]

@@ -112,7 +112,7 @@
       };
 
       // R1
-      show('#rp1', 0, 9.8);
+      show('#rp1', 0, 11.3);
       tl.fromTo('#rp1-cur', { x: 1700, y: 600 }, { x: 1460, y: 300, duration: 0.6, ease: 'power2.inOut' }, 1.4);
       tl.fromTo('#rp1-cam', { scale: 1 }, { scale: 1.6, duration: 0.6, ease: 'power2.inOut' }, 1.5);
       tl.to('#rp1-cur', { scale: 0.85, duration: 0.08, yoyo: true, repeat: 1 }, 2.3);
@@ -120,24 +120,24 @@
       tl.fromTo('#rp1-res', { opacity: 0, clipPath: 'circle(0% at 82% 30%)' }, { opacity: 1, clipPath: 'circle(150% at 82% 30%)', duration: 0.5, ease: 'power2.out' }, 2.5);
       tl.fromTo('#rp1-u', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: 'power2.out' }, 3.3);
       tl.fromTo('#rp1-llm', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 4.3);
-      tl.fromTo('#rp1-vault', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 6.0);
-      tl.fromTo('#rp1-zero', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.8);
+      tl.fromTo('#rp1-vault', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.4);
+      tl.fromTo('#rp1-zero', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 9.6);
 
       // R2
-      show('#rp2', 10, 19.8);
-      tl.fromTo('#rp2-cam', { scale: 1 }, { scale: 1.7, duration: 0.7, ease: 'power2.inOut' }, 11.2);
-      tl.to('#rp2-cam', { opacity: 0.25, filter: 'blur(4px)', duration: 0.3 }, 13.4);
-      tl.fromTo('#rp2-rcpt', { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 13.5);
-      tl.fromTo('#rp2-zero', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 16.3);
+      show('#rp2', 11.5, 21.3);
+      tl.fromTo('#rp2-cam', { scale: 1 }, { scale: 1.7, duration: 0.7, ease: 'power2.inOut' }, 12.7);
+      tl.to('#rp2-cam', { opacity: 0.25, filter: 'blur(4px)', duration: 0.3 }, 14.9);
+      tl.fromTo('#rp2-rcpt', { opacity: 0, y: 60 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 15.0);
+      tl.fromTo('#rp2-zero', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 17.8);
 
       // R3
-      show('#rp3', 20, 29.8);
+      show('#rp3', 21.5, 31.3);
       // Open large so the agent key line reads, then step aside for the recording.
-      tl.fromTo('#rp3-keys', { opacity: 0, scale: 1.7, transformOrigin: 'left top' }, { opacity: 1, scale: 1.7, duration: 0.4, ease: 'power2.out' }, 20.6);
-      tl.to('#rp3-keys', { scale: 1, duration: 0.6, ease: 'power2.inOut' }, 21.6);
-      tl.fromTo('#rp3-ph', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 22.1);
-      tl.fromTo('#rp3-res', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 24.8);
-      tl.to('#rp3-keys', { opacity: 0.35, duration: 0.4 }, 27.4);
+      tl.fromTo('#rp3-keys', { opacity: 0, scale: 1.7, transformOrigin: 'left top' }, { opacity: 1, scale: 1.7, duration: 0.4, ease: 'power2.out' }, 22.1);
+      tl.to('#rp3-keys', { scale: 1, duration: 0.6, ease: 'power2.inOut' }, 23.1);
+      tl.fromTo('#rp3-ph', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 23.6);
+      tl.fromTo('#rp3-res', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 26.3);
+      tl.to('#rp3-keys', { opacity: 0.35, duration: 0.4 }, 28.9);
 
       window.__timelines['replays'] = tl;
     })();
