@@ -1,7 +1,7 @@
 import React from 'react';
 import { Loader2, X, ExternalLink, Bot } from 'lucide-react';
 import type { ScenarioOutcome } from '../api/client';
-import { StatusBadge } from './StatusBadge';
+import { StatusText } from '../ui/StatusText';
 
 export type ScenarioRun =
   | { phase: 'running'; scenario: string }
@@ -31,7 +31,7 @@ export const ScenarioResultCard: React.FC<{ run: ScenarioRun | null; onClose: ()
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium text-text-primary">{title}</p>
             {run.phase === 'done' && (
-              <StatusBadge status={run.outcome.requestStatus} chainMode={run.outcome.chainMode} decidedBy={run.outcome.decidedBy} />
+              <StatusText status={run.outcome.requestStatus} chainMode={run.outcome.chainMode} decidedBy={run.outcome.decidedBy} chainReason={run.outcome.message} />
             )}
           </div>
 

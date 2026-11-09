@@ -96,6 +96,7 @@ try {
   await nav('Approvals'); await shot('10-mobile-approvals');
   await nav('Activity'); await shot('11-mobile-activity');
   await nav('Agent'); await shot('12-mobile-agent');
+  await nav('Limits'); await shot('13-mobile-limits');
 } finally {
   ws.close();
   edge.kill();

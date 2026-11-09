@@ -297,7 +297,7 @@ Each screen keeps its current features and content. These are the layouts and mo
 
 ## 7. Build order (screen by screen)
 
-**Progress:** 1 Foundation ✅ · 2 Home ✅ · 3 Approvals ✅ · 4 Payments and drawer ✅ · 5 Activity ✅ · 6 Agent ✅ (2026-11-09). Screens not yet rebuilt use legacy colour aliases in `tailwind.config.js` so they sit in the new palette until their step.
+**Progress:** 1 Foundation ✅ · 2 Home ✅ · 3 Approvals ✅ · 4 Payments and drawer ✅ · 5 Activity ✅ · 6 Agent ✅ · 7 Limits ✅ (2026-11-09). Screens not yet rebuilt use legacy colour aliases in `tailwind.config.js` so they sit in the new palette until their step.
 
 Each step ships on its own, deployed, before the next starts.
 
