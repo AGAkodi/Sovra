@@ -8,7 +8,7 @@ import path from 'node:path';
 
 const OUT = process.argv[2];
 const ONLY = (process.argv[3] || '').replace(/^only=/, '').split(',').filter(Boolean);
-const URL = 'https://sovra-near.vercel.app';
+const URL = process.env.SHOTS_URL || 'https://sovra-near.vercel.app';
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const PORT = 9333;
 fs.mkdirSync(OUT, { recursive: true });
@@ -52,7 +52,7 @@ async function load() {
   await send('Page.navigate', { url: URL });
   for (let i = 0; i < 60; i++) {
     await sleep(500);
-    const ready = await evaluate(`!!document.querySelector('aside') && !document.body.innerText.includes('Reading vault state')`);
+    const ready = await evaluate(`!!document.querySelector('aside') && !document.querySelector('[aria-busy="true"]')`);
     if (ready) break;
   }
   await sleep(1500);
@@ -63,7 +63,8 @@ async function nav(label) {
 }
 async function shot(name) {
   if (ONLY.length && !ONLY.includes(name)) return;
-  const { data } = await send('Page.captureScreenshot', { format: 'png' });
+  const full = process.env.SHOTS_FULL === '1';
+  const { data } = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: full });
   fs.writeFileSync(path.join(OUT, `${name}.png`), Buffer.from(data, 'base64'));
   console.log('saved', name);
 }
@@ -75,9 +76,9 @@ try {
 
   await viewport(1440, 960);
   await load();
-  await shot('01-overview');
-  await nav('Agent Monitor'); await shot('02-agent-monitor');
-  await nav('Payment Requests'); await shot('03-payment-requests');
+  await shot('01-home');
+  await nav('Agent'); await shot('02-agent');
+  await nav('Payments'); await shot('03-payments');
   // Evidence drawer for the most recent owner-approved spike.
   await evaluate(`[...document.querySelectorAll('tbody tr')].find(r => r.innerText.includes('Owner approved'))?.click()`);
   await sleep(2000);
@@ -85,13 +86,13 @@ try {
   await evaluate(`document.querySelector('[aria-label="Close"], [aria-label="Close drawer"]')?.click(); document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))`);
   await load();
   await nav('Approvals'); await shot('05-approvals');
-  await nav('Policy Studio'); await shot('06-policy-studio');
-  await nav('Audit Trail'); await shot('07-audit-trail');
+  await nav('Limits'); await shot('06-limits');
+  await nav('Activity'); await shot('07-activity');
 
   await viewport(390, 844, true);
   await load();
-  await shot('08-mobile-overview');
-  await nav('Payment Requests'); await shot('09-mobile-payments');
+  await shot('08-mobile-home');
+  await nav('Payments'); await shot('09-mobile-payments');
 } finally {
   ws.close();
   edge.kill();

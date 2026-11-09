@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Loader2, WifiOff, AlertTriangle } from 'lucide-react';
 import { api, Vault, Agent, PaymentRequest, AuditEvent, RiskEvaluation, Health } from './api/client';
 import { Topbar } from './components/Topbar';
+import { HomeScreen } from './screens/HomeScreen';
+import { Banner, Skeleton } from './ui/Surface';
 import { Sidebar, ScreenId } from './components/Sidebar';
 import { EvidenceDrawer } from './components/EvidenceDrawer';
-import { OverviewScreen } from './screens/OverviewScreen';
 import { AgentMonitorScreen } from './screens/AgentMonitorScreen';
 import { PaymentRequestsScreen } from './screens/PaymentRequestsScreen';
 import { ApprovalCenterScreen } from './screens/ApprovalCenterScreen';
@@ -13,7 +13,6 @@ import { AuditTrailScreen } from './screens/AuditTrailScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { WalletProvider, useWallet } from './wallet/WalletContext';
 import { TxToast } from './wallet/TxToast';
-import { FundVaultControl } from './wallet/FundVaultControl';
 import { AgentInfo, DEFAULT_AGENT_INFO } from './scenarios';
 import { ScenarioResultCard, ScenarioRun } from './components/ScenarioResultCard';
 
@@ -94,7 +93,7 @@ function Shell({ data }: { data: AppData }) {
         ? 'stale'
         : 'live';
   const wallet = useWallet();
-  const [currentScreen, setCurrentScreen] = useState<ScreenId>('overview');
+  const [currentScreen, setCurrentScreen] = useState<ScreenId>('home');
   const [selectedRequest, setSelectedRequest] = useState<PaymentRequest | null>(null);
   const [selectedEvaluation, setSelectedEvaluation] = useState<RiskEvaluation | undefined>(undefined);
   const [isScenarioRunning, setIsScenarioRunning] = useState(false);
@@ -108,9 +107,9 @@ function Shell({ data }: { data: AppData }) {
   const ownerBlockedReason = !testnetMode
     ? undefined
     : !wallet.accountId
-      ? 'Connect the owner wallet to sign this action.'
+      ? 'Connect your wallet to do this'
       : !wallet.isOwner
-        ? `Connected account is not the vault owner (${vault?.owner_id ?? 'unknown'}).`
+        ? `Only the vault owner (${vault?.owner_id ?? 'unknown'}) can do this`
         : undefined;
 
   const requireOwner = () => {
@@ -133,7 +132,7 @@ function Shell({ data }: { data: AppData }) {
       if (testnetMode) {
         requireOwner();
         const method = vault.is_frozen ? 'unfreeze' : 'freeze';
-        await wallet.vaultCall(method, {}, { label: vault.is_frozen ? 'Release vault freeze' : 'Emergency freeze vault' });
+        await wallet.vaultCall(method, {}, { label: vault.is_frozen ? 'Unfreeze spending' : 'Freeze spending' });
       } else if (vault.is_frozen) {
         await api.unfreezeAgent(agent?.id || 'agent-01');
       } else {
@@ -210,7 +209,7 @@ function Shell({ data }: { data: AppData }) {
   const handleFund = async (amountNear: number) => {
     requireOwner();
     try {
-      await wallet.vaultCall('deposit', {}, { label: `Deposit ${amountNear} NEAR into the vault`, depositYocto: yoctoFromNear(amountNear) });
+      await wallet.vaultCall('deposit', {}, { label: `Add ${amountNear} NEAR to the vault`, depositYocto: yoctoFromNear(amountNear) });
     } finally {
       await fetchData();
     }
@@ -244,110 +243,108 @@ function Shell({ data }: { data: AppData }) {
   };
 
   const pendingApprovalsCount = requests.filter((r) => r.status === 'pending_approval').length;
-  const fundControl = testnetMode ? <FundVaultControl disabledReason={ownerBlockedReason} onFund={handleFund} /> : undefined;
 
   return (
-    <div className="h-dvh bg-bg text-text-primary flex flex-col font-sans overflow-hidden">
-      <Topbar
-        onRefresh={fetchData}
-        lastUpdated={lastUpdated}
-        isSyncing={isSyncing}
-        vaultContractId={vault?.contract_id}
-        ownerId={vault?.owner_id}
-        testnetMode={testnetMode}
-        connection={connection}
-        menuOpen={menuOpen}
-        onToggleMenu={() => setMenuOpen((o) => !o)}
+    <div className="h-dvh flex overflow-hidden bg-canvas text-fg font-sans">
+      <Sidebar
+        currentScreen={currentScreen}
+        onNavigate={(screen) => setCurrentScreen(screen)}
+        waitingCount={pendingApprovalsCount}
+        isFrozen={Boolean(vault?.is_frozen)}
+        onToggleFreeze={handleToggleFreeze}
+        freezeBlockedReason={ownerBlockedReason}
+        mobileOpen={menuOpen}
+        onCloseMobile={() => setMenuOpen(false)}
       />
 
-      <div className="flex-1 min-h-0 flex overflow-hidden">
-        <Sidebar
-          currentScreen={currentScreen}
-          onNavigate={(screen) => setCurrentScreen(screen)}
-          pendingApprovalsCount={pendingApprovalsCount}
-          isFrozen={Boolean(vault?.is_frozen)}
-          onToggleFreeze={handleToggleFreeze}
-          freezeBlockedReason={ownerBlockedReason}
-          mobileOpen={menuOpen}
-          onCloseMobile={() => setMenuOpen(false)}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Topbar
+          onRefresh={fetchData}
+          lastUpdated={lastUpdated}
+          isSyncing={isSyncing}
+          ownerId={vault?.owner_id}
+          testnetMode={testnetMode}
+          connection={connection}
+          menuOpen={menuOpen}
+          onToggleMenu={() => setMenuOpen((o) => !o)}
         />
 
-        <main className="flex-1 min-w-0 overflow-y-auto px-4 py-5 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
-          {connection === 'offline' && (
-            <div role="alert" className="mb-5 p-3 rounded-card border border-blocked-red/40 bg-blocked-redDim/30 text-xs text-text-primary flex items-start gap-2">
-              <WifiOff className="w-4 h-4 text-blocked-red shrink-0 mt-0.5" />
-              <span>
-                The backend API is unreachable, so nothing below is current and scenarios can't run. Retrying every 8 seconds.
-                {vault && ' Showing the last data received.'}
-              </span>
-            </div>
-          )}
-          {connection === 'stale' && (
-            <div role="status" className="mb-5 p-3 rounded-card border border-caution-amber/40 bg-caution-amberDim/30 text-xs text-text-primary flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-caution-amber shrink-0 mt-0.5" />
-              <span>Couldn't re-read the vault contract from NEAR RPC. Balances and policy are the last known values; the vault still enforces its own rules.</span>
-            </div>
-          )}
-          {!loaded ? (
-            <div className="py-24 flex flex-col items-center gap-3 text-text-muted text-xs">
-              <Loader2 className="w-6 h-6 animate-spin text-telemetry-cyan" />
-              <span>Reading vault state from NEAR testnet…</span>
-            </div>
-          ) : (
-          <>
-          {currentScreen === 'overview' && (
-            <OverviewScreen
-              vault={vault}
-              agent={agent}
-              requests={requests}
-              onSelectRequest={handleSelectRequest}
-              onRunScenario={handleRunScenario}
-              isScenarioRunning={isScenarioRunning}
-              onNavigateToTab={(tab) => setCurrentScreen(tab as ScreenId)}
-              fundControl={fundControl}
-              agentInfo={agentInfo}
-            />
-          )}
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="max-w-[1440px] mx-auto w-full px-4 sm:px-8 py-8 flex flex-col gap-6">
+            {connection === 'offline' && (
+              <Banner kind="offline">
+                Sovra's server can't be reached, so nothing here is current and scenarios can't run. Retrying every 8 seconds
+              </Banner>
+            )}
+            {connection === 'stale' && (
+              <Banner kind="stale">NEAR couldn't be reached just now. Showing the last known state; the vault still enforces its own rules</Banner>
+            )}
+            {vault?.is_frozen && (
+              <Banner kind="frozen">Spending is frozen. Your agent can't pay anyone until you unfreeze</Banner>
+            )}
 
-          {currentScreen === 'agent' && (
-            <AgentMonitorScreen
-              agent={agent}
-              vault={vault}
-              requests={requests}
-              onRunScenario={handleRunScenario}
-              isScenarioRunning={isScenarioRunning}
-              onSelectRequest={handleSelectRequest}
-              agentInfo={agentInfo}
-            />
-          )}
+            {!loaded ? (
+              <LoadingHome />
+            ) : (
+              <>
+                {currentScreen === 'home' && (
+                  <HomeScreen
+                    vault={vault}
+                    agent={agent}
+                    requests={requests}
+                    events={events}
+                    agentInfo={agentInfo}
+                    testnetMode={testnetMode}
+                    onOpenRequest={handleSelectRequest}
+                    onNavigate={(s) => setCurrentScreen(s)}
+                    onRunScenario={handleRunScenario}
+                    scenarioRun={scenarioRun}
+                    isScenarioRunning={isScenarioRunning}
+                    onFund={handleFund}
+                    fundBlockedReason={ownerBlockedReason}
+                  />
+                )}
 
-          {currentScreen === 'payments' && <PaymentRequestsScreen requests={requests} onSelectRequest={handleSelectRequest} />}
+                {currentScreen === 'agent' && (
+                  <AgentMonitorScreen
+                    agent={agent}
+                    vault={vault}
+                    requests={requests}
+                    onRunScenario={handleRunScenario}
+                    isScenarioRunning={isScenarioRunning}
+                    onSelectRequest={handleSelectRequest}
+                    agentInfo={agentInfo}
+                  />
+                )}
 
-          {currentScreen === 'approvals' && (
-            <ApprovalCenterScreen
-              requests={requests}
-              vault={vault}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              ownerBlockedReason={ownerBlockedReason}
-            />
-          )}
+                {currentScreen === 'payments' && <PaymentRequestsScreen requests={requests} onSelectRequest={handleSelectRequest} />}
 
-          {currentScreen === 'policies' && (
-            <PolicyStudioScreen
-              vault={vault}
-              onUpdatePolicy={handleUpdatePolicy}
-              testnetMode={testnetMode}
-              ownerBlockedReason={ownerBlockedReason}
-              demoScale={agentInfo.demoScale}
-            />
-          )}
+                {currentScreen === 'approvals' && (
+                  <ApprovalCenterScreen
+                    requests={requests}
+                    vault={vault}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    ownerBlockedReason={ownerBlockedReason}
+                  />
+                )}
 
-          {currentScreen === 'audit' && <AuditTrailScreen events={events} />}
+                {currentScreen === 'limits' && (
+                  <PolicyStudioScreen
+                    vault={vault}
+                    onUpdatePolicy={handleUpdatePolicy}
+                    testnetMode={testnetMode}
+                    ownerBlockedReason={ownerBlockedReason}
+                    demoScale={agentInfo.demoScale}
+                  />
+                )}
 
-          {currentScreen === 'settings' && <SettingsScreen vault={vault} />}
-          </>
-          )}
+                {currentScreen === 'activity' && <AuditTrailScreen events={events} />}
+
+                {currentScreen === 'settings' && <SettingsScreen vault={vault} />}
+              </>
+            )}
+          </div>
         </main>
       </div>
 
@@ -359,8 +356,29 @@ function Shell({ data }: { data: AppData }) {
           setSelectedEvaluation(undefined);
         }}
       />
-      <ScenarioResultCard run={scenarioRun} onClose={() => setScenarioRun(null)} />
+      {currentScreen !== 'home' && <ScenarioResultCard run={scenarioRun} onClose={() => setScenarioRun(null)} />}
       <TxToast />
+    </div>
+  );
+}
+
+/** Skeleton in the shape of Home while the vault is read for the first time. */
+function LoadingHome() {
+  return (
+    <div className="flex flex-col gap-8" aria-label="Loading" aria-busy="true">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-10 w-40" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
+        <Skeleton className="h-[420px] rounded-card" />
+        <Skeleton className="h-[420px] rounded-card" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Skeleton className="h-28 rounded-card" />
+        <Skeleton className="h-28 rounded-card" />
+        <Skeleton className="h-28 rounded-card" />
+      </div>
     </div>
   );
 }

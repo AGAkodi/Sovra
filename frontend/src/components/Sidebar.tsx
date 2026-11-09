@@ -1,25 +1,16 @@
-import React from 'react';
-import {
-  LayoutDashboard,
-  Activity,
-  Layers,
-  CheckSquare,
-  Sliders,
-  FileText,
-  Settings,
-  Lock,
-  Unlock,
-  X,
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, CheckSquare, Layers, ScrollText, Bot, SlidersHorizontal, Settings, Snowflake, Play, X, type LucideIcon } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Sheet } from '../ui/Surface';
 
-export type ScreenId = 'overview' | 'agent' | 'payments' | 'approvals' | 'policies' | 'audit' | 'settings';
+export type ScreenId = 'home' | 'approvals' | 'payments' | 'activity' | 'agent' | 'limits' | 'settings';
 
 interface SidebarProps {
   currentScreen: ScreenId;
   onNavigate: (screen: ScreenId) => void;
-  pendingApprovalsCount: number;
+  waitingCount: number;
   isFrozen: boolean;
-  onToggleFreeze: () => void;
+  onToggleFreeze: () => Promise<void> | void;
   /** When set, the freeze control is disabled and this explains why. */
   freezeBlockedReason?: string;
   /** Below md the sidebar is an off-canvas drawer. */
@@ -27,116 +18,142 @@ interface SidebarProps {
   onCloseMobile: () => void;
 }
 
+const NAV: { id: ScreenId; label: string; icon: LucideIcon }[] = [
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'approvals', label: 'Approvals', icon: CheckSquare },
+  { id: 'payments', label: 'Payments', icon: Layers },
+  { id: 'activity', label: 'Activity', icon: ScrollText },
+  { id: 'agent', label: 'Agent', icon: Bot },
+  { id: 'limits', label: 'Limits', icon: SlidersHorizontal },
+];
+
+/** The Sovra wordmark with its notch glyph. */
+export const Wordmark: React.FC = () => (
+  <span className="inline-flex items-center gap-2.5">
+    <span className="inline-flex items-end gap-[2px]" aria-hidden="true">
+      {[7, 10, 13].map((h) => (
+        <span key={h} className="w-[3px] rounded-[1px] bg-brass" style={{ height: h }} />
+      ))}
+      <span className="w-[3px] h-[15px] rounded-[1px] bg-line-strong" />
+    </span>
+    <span className="text-[17px] leading-none font-medium tracking-[-0.01em] text-fg">Sovra</span>
+  </span>
+);
+
 export const Sidebar: React.FC<SidebarProps> = ({
   currentScreen,
   onNavigate,
-  pendingApprovalsCount,
+  waitingCount,
   isFrozen,
   onToggleFreeze,
   freezeBlockedReason,
   mobileOpen,
   onCloseMobile,
 }) => {
-  const navItems = [
-    { id: 'overview' as ScreenId, label: 'Overview', icon: LayoutDashboard },
-    { id: 'agent' as ScreenId, label: 'Agent Monitor', icon: Activity },
-    { id: 'payments' as ScreenId, label: 'Payment Requests', icon: Layers },
-    {
-      id: 'approvals' as ScreenId,
-      label: 'Approvals',
-      icon: CheckSquare,
-      badge: pendingApprovalsCount > 0 ? pendingApprovalsCount : undefined,
-    },
-    { id: 'policies' as ScreenId, label: 'Policy Studio', icon: Sliders },
-    { id: 'audit' as ScreenId, label: 'Audit Trail', icon: FileText },
-    { id: 'settings' as ScreenId, label: 'Settings', icon: Settings },
-  ];
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const go = (id: ScreenId) => {
+    onNavigate(id);
+    onCloseMobile();
+  };
+
+  const confirmFreeze = async () => {
+    setBusy(true);
+    try {
+      await onToggleFreeze();
+    } finally {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
+
+  const navButton = (id: ScreenId, label: string, Icon: (typeof NAV)[number]['icon'], badge?: number) => {
+    const active = currentScreen === id;
+    return (
+      <button
+        key={id}
+        onClick={() => go(id)}
+        aria-current={active ? 'page' : undefined}
+        className={`w-full h-9 flex items-center gap-2.5 px-3 rounded-control text-body transition-colors duration-hover ease-vault
+          ${active ? 'bg-raised text-fg shadow-row-active' : 'text-fg-2 hover:text-fg hover:bg-raised/60'}`}
+      >
+        <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-fg-2' : 'text-fg-3'}`} strokeWidth={1.5} />
+        <span className="flex-1 text-left">{label}</span>
+        {badge ? (
+          <span className="min-w-5 h-5 px-1.5 rounded-full bg-brass text-brass-ink font-mono text-meta inline-flex items-center justify-center">
+            {badge}
+          </span>
+        ) : null}
+      </button>
+    );
+  };
 
   return (
     <>
-    {mobileOpen && <div className="fixed inset-0 top-14 z-30 bg-black/60 md:hidden" onClick={onCloseMobile} aria-hidden="true" />}
-    <aside
-      id="app-sidebar"
-      className={`w-64 md:w-60 border-r border-border-subtle bg-surface-raised flex flex-col justify-between gap-4 p-4 shrink-0 overflow-y-auto
-        fixed md:static top-14 left-0 z-40 h-[calc(100dvh-3.5rem)] md:h-auto transition-transform duration-200
-        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
-    >
-      {/* Nav List */}
-      <nav className="space-y-1">
-        <div className="px-3 pb-2 flex items-center justify-between">
-          <span className="text-[11px] font-medium tracking-wider text-text-muted uppercase">Navigation</span>
-          <button onClick={onCloseMobile} className="md:hidden p-1 text-text-muted hover:text-text-primary" aria-label="Close menu">
-            <X className="w-4 h-4" />
+      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/60 md:hidden animate-fade" onClick={onCloseMobile} aria-hidden="true" />}
+      <aside
+        id="app-sidebar"
+        className={`w-64 shrink-0 bg-canvas-deep border-r border-line flex flex-col
+          fixed md:static inset-y-0 left-0 z-40 h-dvh md:h-auto transition-transform duration-sheet ease-vault
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+      >
+        <div className="h-16 px-5 flex items-center justify-between shrink-0">
+          <Wordmark />
+          <button onClick={onCloseMobile} className="md:hidden p-1 text-fg-3 hover:text-fg" aria-label="Close menu">
+            <X className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentScreen === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => {
-                onNavigate(item.id);
-                onCloseMobile();
-              }}
-              aria-current={isActive ? 'page' : undefined}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-control text-xs font-medium transition-colors ${
-                isActive
-                  ? 'bg-surface-secondary text-text-primary border border-border-subtle font-semibold shadow-sm'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary/50 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Icon className={`w-4 h-4 ${isActive ? 'text-telemetry-cyan' : 'text-text-muted'}`} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge !== undefined && (
-                <span className="px-1.5 py-0.2 rounded-full bg-caution-amber text-[#0B1018] font-mono text-[10px] font-bold">
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </nav>
 
-      {/* Emergency Killswitch Panel */}
-      <div className="p-3 rounded-card bg-[#0B1018] border border-border-subtle space-y-2.5">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-text-muted">Emergency Freeze</span>
-          <span className={`w-2 h-2 rounded-full ${isFrozen ? 'bg-blocked-red animate-ping' : 'bg-confirmed-green'}`} />
+        <nav className="flex-1 overflow-y-auto px-3 pt-2 flex flex-col gap-0.5" aria-label="Main">
+          {NAV.map((n) => navButton(n.id, n.label, n.icon, n.id === 'approvals' ? waitingCount : undefined))}
+        </nav>
+
+        <div className="px-3 pb-3 flex flex-col gap-3">
+          {navButton('settings', 'Settings', Settings)}
+
+          <div className="rounded-card border border-line bg-card p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${isFrozen ? 'bg-frozen' : 'bg-positive'}`} aria-hidden="true" />
+              <span className="text-caption text-fg">{isFrozen ? 'Spending is frozen' : 'Spending is on'}</span>
+            </div>
+            <p className="text-meta text-fg-3">
+              {isFrozen ? 'Your agent can’t pay anyone until you unfreeze' : 'Freeze stops every agent payment at once'}
+            </p>
+            <Button
+              variant={isFrozen ? 'secondary' : 'destructive'}
+              size="sm"
+              icon={isFrozen ? <Play className="w-4 h-4" strokeWidth={1.5} /> : <Snowflake className="w-4 h-4" strokeWidth={1.5} />}
+              onClick={() => setConfirming(true)}
+              disabled={Boolean(freezeBlockedReason)}
+              title={freezeBlockedReason}
+            >
+              {isFrozen ? 'Unfreeze' : 'Freeze spending'}
+            </Button>
+            {freezeBlockedReason && <p className="text-meta text-fg-3">{freezeBlockedReason}</p>}
+          </div>
         </div>
-        <p className="text-[11px] text-text-muted leading-tight">
-          {isFrozen
-            ? 'Vault execution suspended. Agent proposals rejected.'
-            : 'Autonomous spending active within guardrails.'}
-        </p>
-        <button
-          onClick={onToggleFreeze}
-          disabled={!!freezeBlockedReason}
-          title={freezeBlockedReason}
-          className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-control text-xs font-medium transition-colors border ${
-            isFrozen
-              ? 'bg-confirmed-greenDim border-confirmed-green/40 text-confirmed-green hover:bg-confirmed-greenDim/80'
-              : 'bg-blocked-redDim border-blocked-red/40 text-blocked-red hover:bg-blocked-redDim/80'
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          {isFrozen ? (
-            <>
-              <Unlock className="w-3.5 h-3.5" />
-              <span>Release Freeze</span>
-            </>
-          ) : (
-            <>
-              <Lock className="w-3.5 h-3.5" />
-              <span>Freeze Agent</span>
-            </>
-          )}
-        </button>
-        {freezeBlockedReason && <p className="text-[11px] text-text-muted leading-tight">{freezeBlockedReason}</p>}
-      </div>
-    </aside>
+      </aside>
+
+      <Sheet
+        open={confirming}
+        title={isFrozen ? 'Unfreeze spending?' : 'Freeze spending?'}
+        onClose={() => !busy && setConfirming(false)}
+        footer={
+          <>
+            <Button variant="quiet" onClick={() => setConfirming(false)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant={isFrozen ? 'primary' : 'danger-fill'} onClick={confirmFreeze} busy={busy}>
+              {isFrozen ? 'Unfreeze' : 'Freeze'}
+            </Button>
+          </>
+        }
+      >
+        {isFrozen
+          ? 'Your agent will be able to pay again, inside your limits. You’ll sign this in your wallet.'
+          : 'Your agent won’t be able to pay anyone until you unfreeze. Payments waiting for you stay on hold. You’ll sign this in your wallet.'}
+      </Sheet>
     </>
   );
 };
-
