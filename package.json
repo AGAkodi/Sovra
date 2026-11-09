@@ -4,15 +4,16 @@
   "private": true,
   "description": "Adaptive spending-control vault for autonomous AI agents on NEAR Protocol",
   "scripts": {
-    "build:contract": "cd contracts/throttle-vault && cargo build --target wasm32-unknown-unknown --release",
-    "test:contract": "cd contracts/throttle-vault && cargo check --target wasm32-unknown-unknown",
-    "install:all": "npm.cmd --prefix backend install && npm.cmd --prefix frontend install",
-    "test:backend": "npm.cmd --prefix backend test",
-    "build:frontend": "npm.cmd --prefix frontend run build",
-    "start:backend": "npm.cmd --prefix backend start",
-    "dev:backend": "npm.cmd --prefix backend run dev",
-    "dev:frontend": "npm.cmd --prefix frontend run dev",
-    "test:all": "npm run test:contract && npm run test:backend && npm run build:frontend"
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "test:backend": "npm --prefix backend test",
+    "test:contract": "cd contracts/throttle-vault && cargo test",
+    "build:contract": "cd contracts/throttle-vault && cargo near build non-reproducible-wasm --no-abi",
+    "build:frontend": "npm --prefix frontend run build",
+    "typecheck": "npm --prefix backend run typecheck && cd frontend && npx tsc --noEmit -p .",
+    "adversarial": "npm --prefix backend run adversarial --",
+    "test:all": "npm run test:backend && npm run typecheck && npm run build:frontend && npm run test:contract"
   },
   "keywords": [
     "near",
@@ -25,4 +26,3 @@
   "author": "",
   "license": "Apache-2.0"
 }
-
