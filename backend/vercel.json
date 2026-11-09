@@ -2,9 +2,26 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "npm run typecheck",
   "outputDirectory": "public",
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ],
   "functions": {
-    "api/index.ts": { "maxDuration": 30 }
+    "api/index.ts": {
+      "maxDuration": 30
+    }
   },
-  "crons": [{ "path": "/cron/reconcile", "schedule": "0 6 * * *" }]
+  "crons": [
+    {
+      "path": "/cron/reconcile",
+      "schedule": "0 6 * * *"
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "day2-testnet-ready": false
+    }
+  }
 }
