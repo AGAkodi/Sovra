@@ -94,6 +94,7 @@ try {
   await shot('08-mobile-home');
   await nav('Payments'); await shot('09-mobile-payments');
   await nav('Approvals'); await shot('10-mobile-approvals');
+  await nav('Activity'); await shot('11-mobile-activity');
 } finally {
   ws.close();
   edge.kill();
