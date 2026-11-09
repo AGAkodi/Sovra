@@ -11,8 +11,9 @@ The UI is being rebuilt screen by screen from [design.md](../../design.md). Scre
 | `02-agent.png` | Agent | Legacy |
 | `03-payments.png` | Payments | Legacy |
 | `04-evidence-drawer.png` | Payment drawer | Legacy |
-| `05-approvals.png` | Approvals, with a 2.5 NEAR payment held at level 5 | Legacy |
+| `05-approvals.png` | Approvals: a 2.5 NEAR payment held at level 5 as a slip with the countdown ring, plus recent decisions | Rebuilt |
 | `06-limits.png` | Limits (policy v2) | Legacy |
 | `07-activity.png` | Activity log | Legacy |
 | `08-mobile-home.png` | Home at 390 px | Rebuilt |
 | `09-mobile-payments.png` | Payments at 390 px | Legacy |
+| `10-mobile-approvals.png` | Approvals at 390 px | Rebuilt |
