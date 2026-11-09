@@ -5,6 +5,7 @@ import { repo, store, StoredRequest } from '../db/store';
 import { getChainMode, getNearConfig, submitPaymentRequest, ChainSubmission } from '../near/client';
 import { syncVaultFromChain, mapOnchainStatus } from '../near/sync';
 import { interpretTask, AgentProposal, TaskForInterpretation } from './llm';
+import { applyTrustOutcome } from './trust';
 
 /** The LLM refused to propose a payment; nothing was submitted. */
 export class AgentDeclinedError extends Error {
@@ -112,10 +113,13 @@ Invoice: ${job.invoiceText}` : job.prompt,
       successful_payments: pastRequests
         .filter((r) => r.status === 'succeeded')
         .map((r) => ({ amount: r.amount_near, timestamp: r.created_at, recipient: r.recipient })),
-      // RPC errors are not the agent's fault and must not count against it.
+      // RPC errors and vault refusals (frozen, low balance) are not the agent's fault.
       failed_payments: pastRequests
-        .filter((r) => (r.status === 'failed' || r.status === 'rejected') && r.decided_by !== 'rpc_error')
+        .filter((r) => (r.status === 'failed' || r.status === 'rejected') && r.decided_by !== 'rpc_error' && r.decided_by !== 'vault_refused')
         .map((r) => ({ amount: r.amount_near, timestamp: r.created_at, recipient: r.recipient, reason: r.reason || 'Rejection' })),
+      incidents: pastRequests
+        .filter((r) => r.authority_level === 6 || (r.status === 'rejected' && r.decided_by === 'owner'))
+        .map((r) => (r.authority_level === 6 ? r.created_at : r.resolved_at ?? r.created_at)),
       trust_score: agent.trust_score,
       last_activity_timestamp: agent.last_heartbeat,
       is_frozen: vault.is_frozen,
@@ -193,6 +197,7 @@ Invoice: ${job.invoiceText}` : job.prompt,
       agent_rationale: agentProposal.rationale,
       agent_fallback_reason: agentProposal.fallback_reason,
     }, request.tx_hash);
+    await applyTrustOutcome(request);
 
     return {
       proposal,

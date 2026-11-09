@@ -30,12 +30,14 @@ Risk scoring is strictly deterministic. Off-chain LLMs only generate proposals; 
 | **Transaction Velocity** ($R_{vel}$) | 20% | Count of tx in trailing 1h and 24h vs velocity limits | `VELOCITY_SPIKE`, `RATE_LIMIT_EXCEEDED` |
 | **Recipient Novelty** ($R_{recip}$) | 25% | 0 if approved whitelist; 40 if seen before; 90 if unknown recipient | `UNKNOWN_RECIPIENT`, `UNVERIFIED_TARGET` |
 | **Task Evidence Quality** ($R_{evid}$) | 15% | Validation of completion hash, prompt consistency, injection scan | `PROMPT_INJECTION_DETECTED`, `INVALID_EVIDENCE` |
-| **Historical Failure Rate** ($R_{fail}$) | 10% | Rolling 24h rejection / chain failure ratio | `HIGH_FAILURE_RATE` |
+| **Historical Failure Rate** ($R_{fail}$) | 10% | Rolling 24h rejection / chain failure ratio (RPC errors and vault refusals for freeze or low balance excluded) | `ELEVATED_FAILURE_RATE` |
 
 Composite Risk Score:
 $$R_{composite} = \min(100, \sum (w_i \cdot R_i))$$
 
-If an agent has fewer than 5 historical transactions, confidence is low, and a conservative prior penalty ($+20$ risk) is applied.
+If an agent has fewer than 5 successful payments, confidence is low, and a conservative prior penalty ($+20$ risk, reason `LOW_HISTORY_PRIOR`) is applied.
+
+**Baseline.** The amount baseline is the median of the agent's most recent 20 *successful* payments, used only once there are at least 3; until then a configured default applies. Rejected, blocked, refused or failed proposals never enter it, so an attacker cannot raise the baseline by submitting large requests.
 
 ## 3. Trust Score & Decay Mechanics (0 - 100)
 - **Baseline Neutral**: Starts at 50 for new agents.
@@ -66,3 +68,12 @@ Throttle maps `(Risk Score, Trust Score, Hard Guardrails)` to exactly six author
 3. **Approval Requirements** must be signed by the owner on-chain or via authenticated challenge.
 4. An LLM may never grant itself higher authority or modify its own scores.
 
+## 6. Implementation notes (engine `risk-v2`, `backend/src/risk/engine.ts`)
+Where the spec leaves a choice open, the code does the following. Every evaluation stores `engine_version` and `policy_version` in its feature snapshot.
+
+- **Amount anomaly.** Implemented as banded steps on the amount / baseline ratio (≤1.5× → 5, >1.5× → 35, >2.5× → 65, >5× → 90, above the per-tx cap → 100) instead of the continuous `ratio × 25` formula, so the boundaries are easy to audit.
+- **Trust gains only on confirmed outcomes.** Evaluation never raises trust. +2 is applied when a payment is confirmed `Succeeded` on-chain (immediately, or when the reconciler sees it), at most +10 in any 24 h; −15 when the owner rejects a held request; −5 when a transfer fails on-chain. Each request moves trust at most once (`TrustUpdated` audit event). RPC errors, vault refusals and simulated results never move trust.
+- **Attack penalty.** A prompt-injection or cap-violation attempt costs 30 trust at evaluation time, before anything reaches the chain.
+- **Trust gates autonomy, not approval.** Levels 1–4 use the trust minimums in section 4. An agent whose trust is too low for levels 1–3 lands on level 4 (still executes, flagged). Trust alone never forces level 5: approval is triggered only by the level-5 criteria (risk ≥ 70, amount anomaly, unknown recipient) or by the vault's own checks.
+- **Hysteresis.** After an incident (a level-6 block or an owner rejection) in the last 24 h, the agent cannot be more autonomous than level 3 until it completes 3 clean payments after that incident (reason `RECOVERING_FROM_INCIDENT`). Hysteresis only ever makes the level stricter.
+- **What the vault enforces.** The contract holds level 5, rejects level 6, and independently holds anything over `max_risk_for_autonomous`, to a non-whitelisted recipient, or over the daily budget, and rejects anything over `per_tx_cap`. Levels 1–4 execute; the extra restrictions described for levels 3 and 4 (cooldowns, alerts) are recorded off-chain but not yet enforced.

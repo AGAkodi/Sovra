@@ -3,6 +3,7 @@
  * Only used in testnet mode; reads are safe to repeat and never re-broadcast anything.
  */
 import { repo, store, StoredRequest, StoredVault } from '../db/store';
+import { applyTrustOutcome } from '../agent/trust';
 import { getAllowedRecipients, getNearConfig, getOnchainRequest, getVaultStatus, OnchainRequest, yoctoToNear } from './client';
 
 export function mapOnchainStatus(req: OnchainRequest, nowMs: number = Date.now()): StoredRequest['status'] {
@@ -88,5 +89,6 @@ export async function reconcileRequest(req: StoredRequest): Promise<boolean> {
     onchain_status: onchain.status,
     failure_reason: onchain.failure_reason,
   });
+  await applyTrustOutcome(req);
   return true;
 }

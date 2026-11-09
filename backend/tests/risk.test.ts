@@ -29,6 +29,7 @@ describe('Throttle Deterministic Risk Engine', () => {
       { amount: 3.0, timestamp: 1700000000000 - 7200000, recipient: 'service-worker.testnet' },
       { amount: 3.5, timestamp: 1700000000000 - 10800000, recipient: 'service-worker.testnet' },
       { amount: 2.8, timestamp: 1700000000000 - 14400000, recipient: 'service-worker.testnet' },
+      { amount: 3.2, timestamp: 1700000000000 - 18000000, recipient: 'service-worker.testnet' },
     ],
     failed_payments: [],
     trust_score: 85,
@@ -38,8 +39,8 @@ describe('Throttle Deterministic Risk Engine', () => {
 
   it('1. Evaluates normal routine payment as Low Risk / Level 1 Autonomous', () => {
     const result = riskEngine.evaluateProposal(baseProposal, cleanHistory);
-    expect(result.composite_risk).toBeLessThan(20);
-    expect(result.authority_level).toBeLessThanOrEqual(2);
+    expect(result.composite_risk).toBeLessThan(15);
+    expect(result.authority_level).toBe(1);
     expect(result.requires_owner_approval).toBe(false);
     expect(result.is_blocked).toBe(false);
   });

@@ -85,8 +85,16 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
               <span className="font-mono text-text-secondary">Active</span>
             </div>
             <div className="flex justify-between">
-              <span>Violation Penalty:</span>
-              <span className="font-mono text-blocked-red">-35 trust</span>
+              <span>Confirmed payment:</span>
+              <span className="font-mono text-confirmed-green">+2 (max +10/24h)</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Owner rejection / failed transfer:</span>
+              <span className="font-mono text-caution-amber">−15 / −5</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Injection or cap violation:</span>
+              <span className="font-mono text-blocked-red">−30</span>
             </div>
           </div>
         </div>

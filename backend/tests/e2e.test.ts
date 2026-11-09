@@ -43,7 +43,9 @@ describe('Throttle End-to-End System Integration Tests', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.requestStatus).toBe('succeeded');
-    expect(body.riskEvaluation.composite_risk).toBeLessThan(20);
+    // A fresh agent carries the +20 low-history prior but still pays autonomously.
+    expect(body.riskEvaluation.composite_risk).toBeLessThan(35);
+    expect(body.riskEvaluation.reasons).toContain('LOW_HISTORY_PRIOR');
     expect(body.riskEvaluation.authority_level).toBeLessThanOrEqual(2);
     expect(body.attestationSignature).toBeDefined();
     // Simulation results must be labelled and must not look like a chain tx hash.
