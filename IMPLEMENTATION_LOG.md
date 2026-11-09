@@ -127,3 +127,7 @@
 - **Clean clone** of `main` from GitHub: install, 68 backend tests, typecheck and frontend build pass; backend starts with no `.env` in simulation/memory/scripted mode and the three scenarios give paid / held / blocked, labelled simulated. Contract tests run in CI (not locally on Windows).
 - Hosted dashboard bundle scanned: no private keys, service-role key, DB URL or Groq key.
 - Vercel did not auto-deploy one push to `main`; production builds were triggered through the API (`gitSource ref=main`).
+
+## Phase 9: UI rebuild (2026-11-09)
+- `design.md` signed off (Sovra name, vault-room direction with brass accent, code-led). Rebuilt so far: foundation and shell, Home (allowance dial), Approvals (slip with countdown ring).
+- New decline dialog tested end to end from the hosted dashboard: [2g3vTLWv…](https://testnet.nearblocks.io/txns/2g3vTLWv9F4EWik9siwodv1UA5SgX1FgyXNqWynrZE1M) → vault `Rejected` ("Declined by the owner in Sovra"), app `rejected` / `decided_by: owner`, and the risk engine's owner-rejection penalty applied once (`TrustUpdated` −15, 24.1 → 9.1).
