@@ -1,0 +1,62 @@
+<template>
+  <style>
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-500.woff2') format('woff2'); font-weight: 500; }
+    @font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/instrument-serif-400.woff2') format('woff2'); font-weight: 400; }
+    #root { position: absolute; inset: 0; background: #0f0f10; color: #ededed; font-family: 'Geist', sans-serif; overflow: hidden; }
+    #po-title { position: absolute; left: 160px; top: 72px; font-family: 'Instrument Serif', serif; font-size: 96px; line-height: 100px; letter-spacing: -0.02em; }
+    #po-title .w { display: inline-block; }
+    .accent { color: #c9a86a; }
+    #po-table { position: absolute; left: 160px; top: 220px; width: 1600px; border-radius: 18px; background: #19191b; border: 1px solid rgb(237 237 237 / 0.08); overflow: hidden; }
+    .row { display: grid; grid-template-columns: 1fr 340px 260px; gap: 24px; align-items: center; height: 80px; padding: 0 40px; border-bottom: 1px solid rgb(237 237 237 / 0.08); font-size: 30px; opacity: 0; }
+    .row:last-child { border-bottom: 0; }
+    .ref { display: inline-flex; align-items: center; gap: 12px; color: #e5484d; font-size: 28px; }
+    .ref i { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+    .hash { font-family: 'Geist Mono', monospace; font-size: 28px; color: #85858b; text-align: right; }
+    #po-trust { position: absolute; left: 160px; top: 230px; width: 1600px; border-radius: 16px; border: 1px solid rgb(237 237 237 / 0.08); opacity: 0; }
+    #po-cap { position: absolute; left: 160px; top: 990px; font-size: 28px; color: #85858b; opacity: 0; }
+  </style>
+
+  <div id="root" data-composition-id="payoff" data-width="1920" data-height="1080">
+    <h2 id="po-title" data-accent="0">9 attacks. 0 NEAR moved</h2>
+    <div id="po-table"></div>
+    <img id="po-trust" src="assets/captures/agent-trust.png" alt="" />
+    <div id="po-cap">Trust after each attack and decline</div>
+  </div>
+
+  <script>
+    (function () {
+      // The nine attacks run against the deployed vault on NEAR testnet (docs/SECURITY_TESTS.md).
+      const rows = [
+        ['Hidden instructions in an invoice', 'Refused by the vault', 'GC1BPjH5Sjcx4vfvDE7FZGNYtgjx9yTb4QFLem6uPiUN'],
+        ['Amount changed after signing', 'Signature check failed', '2XvjC97iQY8YCkFwaRAcqMj4g5Jizt1UXAAhCLtcopsM'],
+        ['Recipient swapped for the attacker', 'Signature check failed', 'F73gDCNpNekcNq6pwRhrXts2gmaRKc3Mh585aP2y9TVW'],
+        ['Agent lowers its own risk score', 'Signature check failed', 'HJRwaTjgwXWqm62k4Zbs5AjoWgEzJw9bY4r4iJv6UiKK'],
+        ['Decision signed by the wrong key', 'Signature check failed', '9cSsBxRDyCZrcqecetVumiwg3f7ZCb1xTqunpMMzjdH1'],
+        ['A paid request sent again', 'Refused as a duplicate', '2R8SS3SYeFuLkhwZE13ykMKWpvgApZQsRtF6xMRNM126'],
+        ['A decision used after it expired', 'Refused as expired', 'FVZiDnsYgm3Bi9WFQyGUgoqqEDkEPggTsVVEqPX2Jcku'],
+        ['Paid under limits already changed', 'Refused, limits changed', 'HZt774e6atL6F6pmDmpkFwZxfGVT4GpVDCfmF7L1cfEK'],
+        ['A payment while spending is frozen', 'Refused, vault frozen', 'AsGAr7yE85f37VDnU8nYKUWGsPnmHcEV3Mqp4FRZCosE'],
+      ];
+      document.querySelector('#po-table').innerHTML = rows
+        .map((r, i) => `<div class="row" id="po-r${i}"><span>${r[0]}</span><span class="ref"><i></i>${r[1]}</span><span class="hash">${r[2].slice(0, 8)}…${r[2].slice(-4)}</span></div>`)
+        .join('');
+
+      const title = document.querySelector('#po-title');
+      title.innerHTML = title.textContent.trim().split(/\s+/).map((w) => `<span class="w${w === '0' ? ' accent' : ''}">${w}</span>`).join(' ');
+
+      const tl = gsap.timeline({ paused: true });
+      // One row per beat (90 BPM is 0.667 s): each lands as a refused attack.
+      rows.forEach((_, i) => {
+        tl.fromTo(`#po-r${i}`, { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.35, ease: 'expo.out' }, 0.2 + i * 0.4);
+      });
+      tl.fromTo(title.querySelectorAll('.w'), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, 4.0);
+      // Pull back: the table steps aside for the trust line it caused.
+      tl.to('#po-table', { opacity: 0, scale: 0.94, filter: 'blur(6px)', duration: 0.4, ease: 'power3.in' }, 7.0);
+      tl.fromTo('#po-trust', { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out' }, 7.2);
+      tl.fromTo('#po-cap', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.3);
+      window.__timelines['payoff'] = tl;
+    })();
+  </script>
+</template>

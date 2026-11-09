@@ -1,0 +1,117 @@
+<template>
+  <style>
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-500.woff2') format('woff2'); font-weight: 500; }
+    @font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/instrument-serif-400.woff2') format('woff2'); font-weight: 400; }
+    #root { position: absolute; inset: 0; background: #141415; color: #ededed; font-family: 'Geist', sans-serif; overflow: hidden; }
+    .nd { position: absolute; inset: 0; opacity: 0; }
+    .nd-title { position: absolute; left: 160px; top: 88px; font-family: 'Instrument Serif', serif; font-size: 84px; line-height: 92px; letter-spacing: -0.02em; }
+    .nd-title .w { display: inline-block; }
+    .accent { color: #c9a86a; }
+    .card { position: absolute; border-radius: 18px; background: #19191b; border: 1px solid rgb(237 237 237 / 0.08); padding: 36px 44px; }
+    .k { font-size: 28px; color: #85858b; }
+    .v { font-size: 32px; line-height: 44px; }
+    .mono { font-family: 'Geist Mono', monospace; }
+    .st { display: inline-flex; align-items: center; gap: 14px; font-size: 36px; }
+    .st i { width: 12px; height: 12px; border-radius: 50%; }
+    .green { color: #4cc38a; } .green i { background: #4cc38a; }
+    .ph { position: absolute; border: 2px dashed rgb(237 237 237 / 0.22); border-radius: 18px; background: #19191b; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+    .ph b { font-weight: 500; font-size: 40px; }
+    .ph span { font-size: 28px; color: #85858b; }
+  </style>
+
+  <div id="root" data-composition-id="normalday" data-width="1920" data-height="1080">
+    <!-- Routine (0–7 s) -->
+    <section class="nd" id="nd1">
+      <h2 class="nd-title" id="nd1-t" data-accent="itself">Routine pays itself</h2>
+      <div class="card" style="left: 160px; top: 260px; width: 820px; height: 720px; padding: 32px">
+        <div style="display: flex; justify-content: space-between"><span class="v">Today</span><span class="k">Daily limit 15 NEAR</span></div>
+        <svg id="nd-dial" viewBox="0 0 320 236" style="width: 100%; margin-top: 24px"></svg>
+        <div style="text-align: center; margin-top: -8px"><span class="mono" style="font-size: 56px" id="nd-left">5.1</span><div class="k">NEAR left today</div></div>
+      </div>
+      <div class="card" id="nd1-res" style="left: 1020px; top: 260px; width: 740px; opacity: 0">
+        <div class="st green"><i></i>Paid</div>
+        <div class="v" style="margin-top: 18px"><span class="mono">0.3 NEAR</span> to sovra-worker-monarch</div>
+        <div class="v" style="margin-top: 24px; color: #a1a1a6; border-left: 3px solid #c9a86a; padding-left: 20px">“Payment for verifying batch #4928 zero-knowledge proof.”</div>
+        <div class="v" id="nd1-trust" style="margin-top: 24px">Trust <span class="mono" style="color: #4cc38a">+2</span> once NEAR confirmed it</div>
+      </div>
+    </section>
+
+    <!-- Unusual (7–16 s) -->
+    <section class="nd" id="nd2">
+      <h2 class="nd-title" id="nd2-t" data-accent="you">Unusual waits for you</h2>
+      <div id="nd2-cam" style="position: absolute; left: 160px; top: 270px; width: 1600px; transform-origin: 90% 30%">
+        <img src="assets/captures/approvals-slip.png" alt="" style="width: 1600px; display: block" />
+      </div>
+      <div class="ph" id="nd2-ph" style="left: 460px; top: 300px; width: 1000px; height: 560px; opacity: 0">
+        <b>Your recording</b>
+        <span>Approve and pay, signed in Meteor</span>
+      </div>
+      <div class="card" id="nd2-done" style="left: 1100px; top: 800px; width: 660px; padding: 28px 36px; opacity: 0; box-shadow: 0 24px 48px rgba(0,0,0,0.35)">
+        <div class="st green" style="font-size: 32px"><i></i>Done</div>
+        <div class="v" style="font-size: 30px; margin-top: 6px">Paid 2.5 NEAR to sovra-worker-monarch</div>
+        <div class="k mono" style="margin-top: 6px">tx 295ye4MV…HrK</div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      function split(el) {
+        const accent = el.dataset.accent;
+        const words = el.textContent.trim().split(/\s+/);
+        el.innerHTML = words.map((w) => `<span class="w${accent && w.replace(/[^a-z]/gi, '') === accent ? ' accent' : ''}">${w}</span>`).join(' ');
+        return el.querySelectorAll('.w');
+      }
+      // The product's allowance dial (same geometry as the app).
+      const CX = 160, CY = 156, R = 120, START = 150, SWEEP = 240;
+      const pt = (a, r) => ({ x: CX + r * Math.cos((a * Math.PI) / 180), y: CY + r * Math.sin((a * Math.PI) / 180) });
+      const arc = (r) => { const s = pt(START, r), e = pt(START + SWEEP, r); return `M ${s.x} ${s.y} A ${r} ${r} 0 1 1 ${e.x} ${e.y}`; };
+      let ticks = '';
+      for (let i = 0; i < 49; i++) {
+        const a = START + (SWEEP * i) / 48, major = i % 6 === 0, p1 = pt(a, R + 14), p2 = pt(a, R + (major ? 22 : 18));
+        ticks += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgb(237 237 237 / ${major ? 0.32 : 0.14})" stroke-width="${major ? 1.25 : 1}"/>`;
+      }
+      const cap = pt(START + SWEEP * (3 / 15), R - 12), cap2 = pt(START + SWEEP * (3 / 15), R + 10);
+      document.querySelector('#nd-dial').innerHTML = `
+        <defs><linearGradient id="nd-brass" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#8a6a2f"/><stop offset="55%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#e3cc9c"/></linearGradient></defs>
+        ${ticks}
+        <path d="${arc(R)}" fill="none" stroke="rgb(237 237 237 / 0.08)" stroke-width="12" stroke-linecap="round"/>
+        <path id="nd-arc" d="${arc(R)}" fill="none" stroke="url(#nd-brass)" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="0.66 1"/>
+        <line x1="${cap.x}" y1="${cap.y}" x2="${cap2.x}" y2="${cap2.y}" stroke="#ededed" stroke-opacity="0.55" stroke-width="1.5"/>
+        <g id="nd-needle"><line x1="${CX - 14}" y1="${CY}" x2="${CX + R - 22}" y2="${CY}" stroke="#ededed" stroke-width="2" stroke-linecap="round"/></g>
+        <circle cx="${CX}" cy="${CY}" r="9" fill="#c9a86a"/><circle cx="${CX}" cy="${CY}" r="3" fill="#141415"/>`;
+
+      const tl = gsap.timeline({ paused: true });
+      const words = (sel, at) => tl.fromTo(split(document.querySelector(sel)), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, at);
+
+      // Routine: today's spend goes 9.9 to 10.2 of 15; the needle swings with it.
+      const spent = { v: 9.9 };
+      const setDial = () => {
+        const f = spent.v / 15;
+        document.querySelector('#nd-arc').setAttribute('stroke-dasharray', `${f} 1`);
+        document.querySelector('#nd-needle').setAttribute('transform', `rotate(${START + SWEEP * f} ${CX} ${CY})`);
+        document.querySelector('#nd-left').textContent = (15 - spent.v).toFixed(1);
+      };
+      setDial();
+      tl.fromTo('#nd1', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0);
+      words('#nd1-t', 0.15);
+      tl.fromTo(spent, { v: 9.9 }, { v: 10.2, duration: 0.9, ease: 'power2.inOut', onUpdate: setDial }, 1.4);
+      tl.fromTo('#nd1-res', { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.6, ease: 'expo.out' }, 1.2);
+      tl.fromTo('#nd1-trust', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 3.6);
+      tl.to('#nd1', { opacity: 0, filter: 'blur(8px)', duration: 0.2, ease: 'power3.in' }, 6.8);
+
+      // Unusual: the slip, a push-in on its countdown ring, then your Meteor approval.
+      tl.fromTo('#nd2', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.0);
+      words('#nd2-t', 7.15);
+      tl.fromTo('#nd2-cam', { scale: 1, y: 40 }, { scale: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 7.0);
+      tl.to('#nd2-cam', { scale: 1.5, duration: 0.6, ease: 'power2.inOut' }, 9.0);
+      tl.to('#nd2-cam', { scale: 1, opacity: 0.2, filter: 'blur(6px)', duration: 0.5, ease: 'power2.inOut' }, 10.6);
+      tl.fromTo('#nd2-ph', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 10.8);
+      tl.fromTo('#nd2-done', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'expo.out' }, 12.6);
+
+      window.__timelines['normalday'] = tl;
+    })();
+  </script>
+</template>

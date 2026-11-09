@@ -1,0 +1,54 @@
+<template>
+  <style>
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-500.woff2') format('woff2'); font-weight: 500; }
+    @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/instrument-serif-400.woff2') format('woff2'); font-weight: 400; }
+    #root { position: absolute; inset: 0; background: #141415; color: #ededed; font-family: 'Geist', sans-serif; overflow: hidden; }
+    #rv-ring { position: absolute; left: 960px; top: 500px; width: 220px; height: 220px; margin: -110px 0 0 -110px; border: 6px solid #c9a86a; border-radius: 50%; }
+    #rv-mark { position: absolute; left: 0; right: 0; top: 330px; display: flex; justify-content: center; align-items: flex-end; gap: 28px; }
+    .rv-notch { display: flex; align-items: flex-end; gap: 10px; }
+    .rv-notch span { display: block; width: 22px; border-radius: 4px; background: #c9a86a; }
+    .rv-notch span.off { background: rgb(237 237 237 / 0.18); }
+    #rv-word { font-size: 168px; line-height: 1; font-weight: 500; letter-spacing: -0.02em; }
+    #rv-built, #rv-line { position: absolute; left: 0; right: 0; text-align: center; font-family: 'Instrument Serif', serif; letter-spacing: -0.02em; }
+    #rv-built { top: 640px; font-size: 72px; color: #a1a1a6; }
+    #rv-line { top: 640px; font-size: 96px; line-height: 104px; }
+    .w { display: inline-block; }
+    .accent { color: #c9a86a; }
+  </style>
+
+  <div id="root" data-composition-id="reveal" data-width="1920" data-height="1080">
+    <div id="rv-ring"></div>
+    <div id="rv-mark">
+      <div class="rv-notch" id="rv-notch">
+        <span style="height: 52px"></span>
+        <span style="height: 76px"></span>
+        <span style="height: 100px"></span>
+        <span class="off" style="height: 120px"></span>
+      </div>
+      <div id="rv-word">Sovra</div>
+    </div>
+    <h2 id="rv-built" data-accent="">So I built Sovra</h2>
+    <h2 id="rv-line" data-accent="say.">Let your agent pay. Keep the final say.</h2>
+  </div>
+
+  <script>
+    (function () {
+      function split(el) {
+        const accent = el.dataset.accent;
+        const words = el.textContent.trim().split(/\s+/);
+        el.innerHTML = words.map((w) => `<span class="w${accent && w === accent ? ' accent' : ''}">${w}</span>`).join(' ');
+        return el.querySelectorAll('.w');
+      }
+      const tl = gsap.timeline({ paused: true });
+      // The key's bow (carried from the last scene) grows, then gives way to the mark.
+      tl.fromTo('#rv-ring', { scale: 0.6, opacity: 1 }, { scale: 2.4, opacity: 0, duration: 0.65, ease: 'power2.inOut' }, 0);
+      tl.fromTo('#rv-notch span', { scaleY: 0, transformOrigin: 'bottom center' }, { scaleY: 1, duration: 0.45, ease: 'expo.out', stagger: 0.07 }, 0.35);
+      tl.fromTo('#rv-word', { opacity: 0, clipPath: 'inset(0 100% 0 0)' }, { opacity: 1, clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, 0.6);
+      tl.fromTo(split(document.querySelector('#rv-built')), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, 0.9);
+      tl.to('#rv-built', { opacity: 0, filter: 'blur(6px)', duration: 0.2 }, 2.3);
+      tl.fromTo(split(document.querySelector('#rv-line')), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, 2.5);
+      window.__timelines['reveal'] = tl;
+    })();
+  </script>
+</template>

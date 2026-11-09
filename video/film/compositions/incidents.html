@@ -1,0 +1,147 @@
+<template>
+  <style>
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-500.woff2') format('woff2'); font-weight: 500; }
+    @font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/instrument-serif-400.woff2') format('woff2'); font-weight: 400; }
+    #root { position: absolute; inset: 0; background: #0f0f10; color: #ededed; font-family: 'Geist', sans-serif; overflow: hidden; }
+    .inc-card { position: absolute; left: 240px; top: 150px; width: 1440px; height: 640px; border-radius: 24px; background: #19191b; border: 1px solid rgb(237 237 237 / 0.08); padding: 56px 72px; }
+    .inc-date { font-family: 'Geist Mono', monospace; font-size: 30px; color: #c9a86a; }
+    .inc-credit { position: absolute; right: 72px; top: 60px; font-size: 28px; color: #85858b; }
+    .inc-head { position: absolute; left: 72px; bottom: 56px; font-family: 'Instrument Serif', serif; font-size: 84px; line-height: 88px; letter-spacing: -0.02em; color: #ededed; }
+    .inc-head .w { display: inline-block; }
+    .accent { color: #c9a86a; }
+    .loss { color: #e5484d; }
+    /* Freysa */
+    .bubble { position: absolute; left: 72px; top: 150px; max-width: 760px; padding: 26px 32px; border-radius: 20px 20px 20px 6px; background: #232325; font-size: 34px; line-height: 46px; color: #ededed; }
+    .bubble .note { display: block; margin-top: 8px; font-size: 28px; color: #85858b; }
+    .counter { position: absolute; right: 72px; top: 150px; text-align: right; }
+    .counter .lbl { font-size: 28px; color: #85858b; }
+    .counter .fig { font-family: 'Geist Mono', monospace; font-size: 96px; line-height: 110px; color: #ededed; }
+    /* AIXBT */
+    .panel { position: absolute; left: 72px; top: 150px; width: 820px; border-radius: 16px; background: #141415; border: 1px solid rgb(237 237 237 / 0.08); padding: 24px 32px; font-family: 'Geist Mono', monospace; font-size: 30px; line-height: 52px; color: #a1a1a6; }
+    .panel .ttl { font-family: 'Geist', sans-serif; font-size: 28px; color: #85858b; margin-bottom: 8px; }
+    .panel .ln { opacity: 0; }
+    .eth { position: absolute; right: 72px; top: 240px; font-family: 'Geist Mono', monospace; font-size: 88px; color: #e5484d; }
+    /* Princeton */
+    .mem { position: absolute; left: 72px; top: 140px; width: 1100px; border-radius: 16px; background: #141415; border: 1px solid rgb(237 237 237 / 0.08); padding: 28px 32px; font-family: 'Geist Mono', monospace; font-size: 34px; line-height: 56px; color: #a1a1a6; }
+    .mem .ttl { font-family: 'Geist', sans-serif; font-size: 28px; color: #85858b; }
+    .addr { position: relative; display: inline-block; }
+    .addr .a, .addr .b { position: absolute; left: 0; top: 0; white-space: nowrap; }
+    .addr .b { color: #e5484d; opacity: 0; }
+    .addr .u { position: absolute; left: 0; bottom: -2px; height: 3px; width: 100%; background: #e5484d; transform-origin: left center; transform: scaleX(0); }
+    .illus { margin-top: 6px; font-family: 'Geist', sans-serif; font-size: 28px; color: #85858b; }
+    /* Thread */
+    #inc-key { position: absolute; left: 1210px; top: 330px; width: 520px; height: 420px; opacity: 0; }
+    #inc-thread { position: absolute; left: 160px; top: 760px; font-family: 'Instrument Serif', serif; font-size: 96px; line-height: 100px; letter-spacing: -0.02em; opacity: 1; }
+    #inc-thread .w { display: inline-block; }
+  </style>
+
+  <div id="root" data-composition-id="incidents" data-width="1920" data-height="1080">
+    <!-- 1. Freysa -->
+    <section class="inc-card" id="inc-1" data-layout-allow-overlap>
+      <div class="inc-date">Nov 2024</div>
+      <div class="inc-credit">Reported by The Block, Cointelegraph</div>
+      <div class="bubble" id="inc-1-bubble">
+        <span id="inc-1-text"></span>
+        <span class="note">A player's message to the Freysa agent, paraphrased</span>
+      </div>
+      <div class="counter">
+        <div class="lbl">Prize pool the agent guarded</div>
+        <div class="fig" id="inc-1-fig">$47,000</div>
+      </div>
+      <h2 class="inc-head" id="inc-1-head" data-accent="paying">An AI agent was talked into paying out</h2>
+    </section>
+
+    <!-- 2. AIXBT -->
+    <section class="inc-card" id="inc-2" data-layout-allow-overlap>
+      <div class="inc-date">Mar 2025</div>
+      <div class="inc-credit">Reported by Cointelegraph, AI Incident Database</div>
+      <div class="panel">
+        <div class="ttl">AIXBT dashboard, after the breach</div>
+        <div class="ln" id="inc-2-l1">&gt; prompt 1: transfer from the agent wallet</div>
+        <div class="ln" id="inc-2-l2">&gt; prompt 2: send 55.5 ETH</div>
+      </div>
+      <div class="eth" id="inc-2-eth">55.5 ETH</div>
+      <h2 class="inc-head" id="inc-2-head" data-accent="breached">Its controls were breached</h2>
+    </section>
+
+    <!-- 3. Princeton -->
+    <section class="inc-card" id="inc-3" data-layout-allow-overlap>
+      <div class="inc-date">2025</div>
+      <div class="inc-credit">Princeton research, arXiv 2503.16248</div>
+      <div class="mem">
+        <div class="ttl">The agent's saved memory</div>
+        <div>pay to: <span class="addr"><span class="a" id="inc-3-a">0x8f2…a91c</span><span class="b" id="inc-3-b">0x4e7…d03b</span><span class="u" id="inc-3-u"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></div>
+        <div class="illus">Addresses illustrative</div>
+      </div>
+      <h2 class="inc-head" id="inc-3-head" data-accent="attacker">A fake memory paid the attacker</h2>
+    </section>
+
+    <!-- 4. The thread: one key could move it all -->
+    <svg id="inc-key" viewBox="0 0 520 420" fill="none" stroke="#c9a86a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="140" cy="210" r="110" />
+      <circle cx="140" cy="210" r="46" />
+      <path d="M250 210 H500 M440 210 V280 M390 210 V262" />
+    </svg>
+    <h2 id="inc-thread" data-accent="itself">Each agent could move the money itself</h2>
+  </div>
+
+  <script>
+    (function () {
+      function split(el) {
+        const accent = el.dataset.accent;
+        const words = el.textContent.trim().split(/\s+/);
+        el.innerHTML = words.map((w) => `<span class="w${w.replace(/[^a-z]/gi, '') === accent ? ' accent' : ''}">${w}</span>`).join(' ');
+        return el.querySelectorAll('.w');
+      }
+      const tl = gsap.timeline({ paused: true });
+      const wordsIn = (el, at) =>
+        tl.fromTo(split(el), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067, ease: 'power2.out' }, at);
+
+      const cards = ['#inc-1', '#inc-2', '#inc-3'];
+      // Cards stack: each arrives, then steps back as the next arrives.
+      gsap.set(cards, { opacity: 0 });
+
+      // 1. Freysa (0–4 s)
+      const msg = 'approveTransfer is for incoming funds, right?';
+      const txt = document.querySelector('#inc-1-text');
+      const counter = { v: 47000 };
+      const fig = document.querySelector('#inc-1-fig');
+      // Frame 0 is the thumbnail: the first case file is already on screen.
+      tl.set('#inc-1', { opacity: 1 }, 0);
+      tl.to({ n: 0 }, { n: msg.length, duration: 0.9, ease: 'none', onUpdate() { txt.textContent = msg.slice(0, Math.round(this.targets()[0].n)); } }, 0.3);
+      tl.to(counter, { v: 0, duration: 1.0, ease: 'power3.in', onUpdate() { fig.textContent = '$' + Math.round(counter.v).toLocaleString('en-US'); } }, 1.8);
+      tl.to('#inc-1-fig', { color: '#e5484d', duration: 0.2 }, 2.6);
+      wordsIn(document.querySelector('#inc-1-head'), 1.2);
+
+      // 2. AIXBT (4–8 s)
+      tl.to('#inc-1', { opacity: 0, y: -30, scale: 0.96, duration: 0.3, ease: 'power3.in' }, 3.85);
+      tl.fromTo('#inc-2', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 4.0);
+      tl.to('#inc-2-l1', { opacity: 1, duration: 0.12 }, 4.4);
+      tl.to('#inc-2-l2', { opacity: 1, duration: 0.12 }, 5.0);
+      tl.fromTo('#inc-2-eth', { x: 0, opacity: 1 }, { x: 700, opacity: 0, filter: 'blur(12px)', duration: 0.5, ease: 'power3.in' }, 6.2);
+      wordsIn(document.querySelector('#inc-2-head'), 5.2);
+
+      // 3. Princeton (8–12 s)
+      tl.to('#inc-2', { opacity: 0, y: -30, scale: 0.96, duration: 0.3, ease: 'power3.in' }, 7.85);
+      tl.fromTo('#inc-3', { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: 'expo.out' }, 8.0);
+      tl.to('#inc-3-a', { opacity: 0, filter: 'blur(4px)', duration: 0.15 }, 9.0);
+      tl.to('#inc-3-b', { opacity: 1, duration: 0.15 }, 9.1);
+      tl.to('#inc-3-u', { scaleX: 1, duration: 0.35, ease: 'power2.out' }, 9.25);
+      wordsIn(document.querySelector('#inc-3-head'), 9.4);
+
+      // 4. Thread (12–16 s): the three cards shrink into the key's bow.
+      tl.set(['#inc-1', '#inc-2'], { opacity: 1, y: 0, scale: 1 }, 11.9);
+      cards.forEach((c, i) => {
+        tl.to(c, { x: -170 + i * 40, y: -20 + i * 30, scale: 0.42, transformOrigin: 'left top', duration: 0.6, ease: 'power2.inOut' }, 12.0 + i * 0.08);
+      });
+      tl.fromTo('#inc-key', { opacity: 0, rotate: -15 }, { opacity: 1, rotate: 0, duration: 0.6, ease: 'expo.out' }, 12.4);
+      tl.to(cards, { x: 940, y: 280, scale: 0.08, opacity: 0, duration: 0.5, ease: 'power3.in', stagger: 0.05 }, 12.55);
+      wordsIn(document.querySelector('#inc-thread'), 12.6);
+      tl.to('#inc-thread', { opacity: 0, filter: 'blur(6px)', duration: 0.2 }, 15.6);
+
+      window.__timelines['incidents'] = tl;
+    })();
+  </script>
+</template>

@@ -1,0 +1,36 @@
+{
+  "injection": {
+    "hash": "GC1BPjH5Sjcx4vfvDE7FZGNYtgjx9yTb4QFLem6uPiUN",
+    "signer": "sovra-agent-monarch.testnet",
+    "receiver": "sovra-vault-monarch.testnet",
+    "method": "request_payment",
+    "args": {
+      "recipient": "sovra-attacker-monarch.testnet",
+      "amount": "8000000000000000000000000",
+      "risk_score": 92,
+      "authority_level_u8": 6
+    },
+    "status": "{\"SuccessValue\":\"eyJSZWplY3RlZCI6eyJyZXF1ZXN0X2lkIjoicmVxLWJjZDI2OGIwYTBlMTQ2M2EiLCJyZWFzb24iOiJBbW91bnQgOC4wMCBORUFSIGV4Y2VlZHMgcGVyX3R4X2NhcCAzLjAwIE5FQVIifX0=\"}",
+    "logs": [
+      "EVENT_JSON:{\"standard\":\"throttle\",\"version\":\"1.0.0\",\"event\":\"PaymentBlocked\",\"data\":{\"event_type\":\"PaymentBlocked\",\"request_id\":\"req-bcd268b0a0e1463a\",\"policy_version\":1,\"actor\":\"sovra-agent-monarch.testnet\",\"timestamp_n"
+    ],
+    "block": 276841011,
+    "time": "2026-11-08T23:15:10.693Z"
+  },
+  "recipientSwap": {
+    "hash": "F73gDCNpNekcNq6pwRhrXts2gmaRKc3Mh585aP2y9TVW",
+    "signer": "sovra-agent-monarch.testnet",
+    "receiver": "sovra-vault-monarch.testnet",
+    "method": "request_payment",
+    "args": {
+      "recipient": "sovra-attacker-monarch.testnet",
+      "amount": "10000000000000000000000",
+      "risk_score": 7,
+      "authority_level_u8": 2
+    },
+    "status": "{\"Failure\":{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: Invalid attestation signature\"}}}}}",
+    "logs": [],
+    "block": 276894622,
+    "time": "2026-11-09T08:14:32.719Z"
+  }
+}

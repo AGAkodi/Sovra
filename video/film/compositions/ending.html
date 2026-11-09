@@ -1,0 +1,83 @@
+<template>
+  <style>
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Geist'; src: url('assets/fonts/geist-500.woff2') format('woff2'); font-weight: 500; }
+    @font-face { font-family: 'Geist Mono'; src: url('assets/fonts/geist-mono-400.woff2') format('woff2'); font-weight: 400; }
+    @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/instrument-serif-400.woff2') format('woff2'); font-weight: 400; }
+    #root { position: absolute; inset: 0; background: #141415; color: #ededed; font-family: 'Geist', sans-serif; overflow: hidden; }
+    #en-dial { position: absolute; left: 560px; top: 120px; width: 800px; }
+    #en-claim { position: absolute; left: 0; right: 0; top: 760px; text-align: center; font-family: 'Instrument Serif', serif; font-size: 104px; line-height: 108px; letter-spacing: -0.02em; }
+    #en-claim .w { display: inline-block; }
+    .accent { color: #c9a86a; }
+    #en-card { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; opacity: 0; }
+    #en-mark { display: flex; align-items: flex-end; gap: 32px; }
+    .en-notch { display: flex; align-items: flex-end; gap: 12px; }
+    .en-notch span { display: block; width: 26px; border-radius: 4px; background: rgb(237 237 237 / 0.14); }
+    #en-word { font-size: 200px; line-height: 1; font-weight: 500; letter-spacing: -0.02em; }
+    #en-url { font-family: 'Geist Mono', monospace; font-size: 44px; color: #ededed; }
+    #en-live { display: inline-flex; align-items: center; gap: 14px; font-size: 30px; color: #a1a1a6; }
+    #en-live i { width: 12px; height: 12px; border-radius: 50%; background: #4cc38a; }
+  </style>
+
+  <div id="root" data-composition-id="ending" data-width="1920" data-height="1080">
+    <svg id="en-dial" viewBox="0 0 320 236"></svg>
+    <h2 id="en-claim" data-hold>A budget, not a blank cheque</h2>
+    <div id="en-card">
+      <div id="en-mark">
+        <div class="en-notch">
+          <span id="en-n1" style="height: 62px"></span>
+          <span id="en-n2" style="height: 92px"></span>
+          <span id="en-n3" style="height: 122px"></span>
+          <span id="en-n4" style="height: 146px"></span>
+        </div>
+        <div id="en-word">Sovra</div>
+      </div>
+      <div id="en-url">sovra-near.vercel.app</div>
+      <div id="en-live"><i></i>Live on NEAR testnet</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const CX = 160, CY = 156, R = 120, START = 150, SWEEP = 240;
+      const pt = (a, r) => ({ x: CX + r * Math.cos((a * Math.PI) / 180), y: CY + r * Math.sin((a * Math.PI) / 180) });
+      const arc = (r) => { const s = pt(START, r), e = pt(START + SWEEP, r); return `M ${s.x} ${s.y} A ${r} ${r} 0 1 1 ${e.x} ${e.y}`; };
+      let ticks = '';
+      for (let i = 0; i < 49; i++) {
+        const a = START + (SWEEP * i) / 48, major = i % 6 === 0, p1 = pt(a, R + 14), p2 = pt(a, R + (major ? 22 : 18));
+        ticks += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="rgb(237 237 237 / ${major ? 0.32 : 0.14})" stroke-width="${major ? 1.25 : 1}"/>`;
+      }
+      document.querySelector('#en-dial').innerHTML = `
+        <defs><linearGradient id="en-brass" x1="0" y1="1" x2="1" y2="0"><stop offset="0%" stop-color="#8a6a2f"/><stop offset="55%" stop-color="#c9a86a"/><stop offset="100%" stop-color="#e3cc9c"/></linearGradient></defs>
+        ${ticks}
+        <path d="${arc(R)}" fill="none" stroke="rgb(237 237 237 / 0.08)" stroke-width="12" stroke-linecap="round"/>
+        <path id="en-arc" d="${arc(R)}" fill="none" stroke="url(#en-brass)" stroke-width="12" stroke-linecap="round" pathLength="1" stroke-dasharray="0.68 1"/>
+        <g id="en-needle"><line x1="${CX - 14}" y1="${CY}" x2="${CX + R - 22}" y2="${CY}" stroke="#ededed" stroke-width="2" stroke-linecap="round"/></g>
+        <circle cx="${CX}" cy="${CY}" r="9" fill="#c9a86a"/><circle cx="${CX}" cy="${CY}" r="3" fill="#141415"/>`;
+
+      const claim = document.querySelector('#en-claim');
+      claim.innerHTML = claim.textContent.trim().split(/\s+/).map((w) => `<span class="w${w === 'budget,' ? ' accent' : ''}">${w}</span>`).join(' ');
+
+      const tl = gsap.timeline({ paused: true });
+      // The needle settles at today's real spend (10.2 of 15).
+      const f = { v: 0.86 };
+      const setN = () => {
+        document.querySelector('#en-needle').setAttribute('transform', `rotate(${START + SWEEP * f.v} ${CX} ${CY})`);
+        document.querySelector('#en-arc').setAttribute('stroke-dasharray', `${f.v} 1`);
+      };
+      setN();
+      tl.fromTo('#en-dial', { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out' }, 0);
+      tl.fromTo(f, { v: 0.86 }, { v: 10.2 / 15, duration: 1.6, ease: 'power3.out', onUpdate: setN }, 0.2);
+      tl.fromTo(claim.querySelectorAll('.w'), { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.13, stagger: 0.067 }, 1.0);
+      tl.to(['#en-dial', '#en-claim'], { opacity: 0, filter: 'blur(8px)', duration: 0.25, ease: 'power3.in' }, 5.2);
+
+      // End card: the notch fills tick by tick, the wordmark wipes in, the address holds.
+      tl.fromTo('#en-card', { opacity: 0 }, { opacity: 1, duration: 0.2 }, 5.5);
+      ['#en-n1', '#en-n2', '#en-n3'].forEach((n, i) => tl.to(n, { backgroundColor: '#c9a86a', duration: 0.15 }, 5.7 + i * 0.22));
+      tl.fromTo('#en-word', { clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0% 0 0)', duration: 0.6, ease: 'power3.out' }, 6.2);
+      tl.fromTo('#en-url', { opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0px)', duration: 0.2 }, 7.0);
+      tl.fromTo('#en-live', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 7.3);
+      window.__timelines['ending'] = tl;
+    })();
+  </script>
+</template>
