@@ -139,6 +139,7 @@ The tests never touch testnet, Supabase or Groq: they force simulation, the in-m
 - [SECURITY_TESTS.md](docs/SECURITY_TESTS.md): adversarial results with tx hashes, key scope, threat model limits
 - [TESTNET_SETUP.md](docs/TESTNET_SETUP.md): accounts, keys, deploy
 - [DEPLOY_VERCEL.md](docs/DEPLOY_VERCEL.md): hosting
+- [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md): video script and shot list
 - [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md): build log with evidence
 
 ## License
