@@ -150,14 +150,22 @@ export const AgentMonitorScreen: React.FC<AgentMonitorScreenProps> = ({
               <Sliders className="w-4 h-4 text-telemetry-cyan" />
               Agent Behavioral Baseline
             </h2>
-            <span className="text-xs text-text-muted">Rolling 30-day</span>
+            <span className="text-xs text-text-muted">From payment history</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3.5 text-xs">
             <div className="p-3 rounded-card bg-surface-secondary border border-border-subtle">
               <span className="text-text-muted">Median Task Amount</span>
-              <div className="text-lg font-bold font-mono text-text-primary mt-1">3.0 NEAR</div>
-              <span className="text-[10px] text-text-muted">Expected benchmark</span>
+              <div className="text-lg font-bold font-mono text-text-primary mt-1">
+                {(() => {
+                  const paid = requests.filter((r) => r.status === 'succeeded').map((r) => r.amount_near).sort((a, b) => a - b);
+                  if (paid.length === 0) return '—';
+                  const mid = Math.floor(paid.length / 2);
+                  const median = paid.length % 2 ? paid[mid] : (paid[mid - 1] + paid[mid]) / 2;
+                  return `${Math.round(median * 1000) / 1000} NEAR`;
+                })()}
+              </div>
+              <span className="text-[10px] text-text-muted">Of paid requests</span>
             </div>
             <div className="p-3 rounded-card bg-surface-secondary border border-border-subtle">
               <span className="text-text-muted">24h Cumulative Volume</span>

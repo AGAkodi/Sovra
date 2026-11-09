@@ -57,7 +57,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ request, evaluat
           <div>
             <span className="text-xs text-text-muted">Policy Version</span>
             <div className="text-sm font-mono text-text-secondary mt-1">
-              On-chain v{request.vault_id || 1}
+              {request.policy_version ? `On-chain v${request.policy_version}` : 'Not recorded'}
             </div>
           </div>
         </div>

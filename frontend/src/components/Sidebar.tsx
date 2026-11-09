@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       id="app-sidebar"
       className={`w-64 md:w-60 border-r border-border-subtle bg-surface-raised flex flex-col justify-between gap-4 p-4 shrink-0 overflow-y-auto
-        fixed md:sticky top-14 left-0 z-40 h-[calc(100dvh-3.5rem)] transition-transform duration-200
+        fixed md:static top-14 left-0 z-40 h-[calc(100dvh-3.5rem)] md:h-auto transition-transform duration-200
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
     >
       {/* Nav List */}

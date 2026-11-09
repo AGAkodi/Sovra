@@ -247,7 +247,7 @@ function Shell({ data }: { data: AppData }) {
   const fundControl = testnetMode ? <FundVaultControl disabledReason={ownerBlockedReason} onFund={handleFund} /> : undefined;
 
   return (
-    <div className="min-h-screen bg-bg text-text-primary flex flex-col font-sans">
+    <div className="h-dvh bg-bg text-text-primary flex flex-col font-sans overflow-hidden">
       <Topbar
         onRefresh={fetchData}
         lastUpdated={lastUpdated}
@@ -260,7 +260,7 @@ function Shell({ data }: { data: AppData }) {
         onToggleMenu={() => setMenuOpen((o) => !o)}
       />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 flex overflow-hidden">
         <Sidebar
           currentScreen={currentScreen}
           onNavigate={(screen) => setCurrentScreen(screen)}
