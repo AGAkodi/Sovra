@@ -84,7 +84,7 @@
 - Vercel: `backend/api/index.ts` + `backend/vercel.json` (daily cron; Hobby limit), `frontend/vercel.json`, `VITE_API_BASE`, CORS allow-list, spend rate limit. Not deployed yet; see `docs/DEPLOY_VERCEL.md`.
 
 ## Phase 5: hosted on Vercel (2026-11-08)
-- **Dashboard:** https://throttle-dashboard-ruddy.vercel.app  · **API:** https://throttle-api-mauve.vercel.app
+- **Dashboard:** https://sovra-near.vercel.app  · **API:** https://throttle-api-mauve.vercel.app
 - Two projects (`throttle-api` root `backend`, `throttle-dashboard` root `frontend`), both git-connected to `AGAkodi/Sovra`. Env vars set via the Vercel REST API from `.env`; secrets stored as sensitive. `throttle-api.vercel.app` belongs to someone else, so the API lives on `throttle-api-mauve.vercel.app`.
 - Hosted API `/health`: `chain_mode: testnet`, `store_mode: supabase`, non-ephemeral signer. CORS allows only the dashboard origin (verified with a foreign origin).
 - Hosted routine payment confirmed on-chain ([EjVdtP9M…](https://testnet.nearblocks.io/txns/EjVdtP9MVjGs38jbssiGtMYpCpJAvcQXuGnRDqQtt1gm)); hosted dashboard shows live vault data and the persisted history.

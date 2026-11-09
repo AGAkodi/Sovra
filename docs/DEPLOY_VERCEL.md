@@ -1,6 +1,6 @@
 # Deploying to Vercel
 
-**Live (2026-11-08):** dashboard https://throttle-dashboard-ruddy.vercel.app · API https://throttle-api-mauve.vercel.app (`/health`). Vercel team `monarchs-projects-cc314129`.
+**Live (2026-11-08):** dashboard https://sovra-near.vercel.app · API https://throttle-api-mauve.vercel.app (`/health`). Vercel team `monarchs-projects-cc314129`.
 
 > Both projects are connected to `AGAkodi/Sovra`, so pushes to `main` deploy production automatically. The CLI path used for the first deploy: `vercel deploy --prod --yes --project <name>` run from the **repo root** (the projects have Root Directory set; a root `.vercelignore` keeps `.env`, `contracts/`, build output and `node_modules` out of the upload).
 
@@ -43,7 +43,7 @@ Environment variables (Production):
 | `STORE_MODE` | `supabase` (fail fast if misconfigured) |
 | `SUPABASE_URL` | from `.env` |
 | `SUPABASE_SERVICE_ROLE_KEY` | from `.env` |
-| `CORS_ORIGINS` | the dashboard URL, e.g. `https://throttle-dashboard.vercel.app` |
+| `CORS_ORIGINS` | the dashboard URL, e.g. `https://sovra-near.vercel.app` (comma-separate several) |
 | `CRON_SECRET` | any long random string |
 
 Not needed on Vercel: `SUPABASE_DB_URL`, any public keys, `WASM_PATH`.
