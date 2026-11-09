@@ -21,7 +21,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({ request, evaluat
           <div>
             <div className="flex items-center gap-2">
               <span className="font-mono text-sm text-text-muted">{request.request_id}</span>
-              <StatusBadge status={request.status} chainMode={request.chain_mode} />
+              <StatusBadge status={request.status} chainMode={request.chain_mode} decidedBy={request.decided_by} />
             </div>
             <h2 className="text-lg font-semibold text-text-primary mt-1">Payment Evidence & Verification</h2>
           </div>

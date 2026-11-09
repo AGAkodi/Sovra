@@ -63,7 +63,8 @@ export interface StoredRequest {
   /** 'testnet' = outcome read from the vault contract; 'simulation' = nothing was broadcast. */
   chain_mode: 'testnet' | 'simulation';
   /** Who made the final call: the off-chain risk engine, the vault contract, or the owner. */
-  decided_by?: 'risk_engine' | 'vault' | 'owner' | 'rpc_error';
+  /** vault = recorded by the contract; vault_refused = the call panicked, nothing recorded on-chain. */
+  decided_by?: 'risk_engine' | 'vault' | 'vault_refused' | 'owner' | 'rpc_error';
   /** Raw reason the vault gave (rejection / panic / failure), when known. */
   chain_reason?: string;
   policy_version?: number;

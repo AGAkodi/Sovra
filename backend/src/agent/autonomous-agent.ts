@@ -235,6 +235,7 @@ Invoice: ${job.invoiceText}` : job.prompt,
         return { request: req, message: `Vault rejected on-chain: ${sub.reason}` };
       case 'refused':
         req.status = 'rejected';
+        req.decided_by = 'vault_refused';
         req.resolved_at = now;
         return { request: req, message: `Vault refused the call: ${sub.reason}` };
       case 'rpc_error':
@@ -283,7 +284,10 @@ function auditEventFor(req: StoredRequest): string {
     case 'pending_approval':
       return `${prefix}PaymentHeldForApproval`;
     case 'rejected':
-      return req.decided_by === 'vault' ? 'PaymentRejectedOnChain' : `${prefix}PaymentBlockedByRiskEngine`;
+      if (req.decided_by === 'vault') return 'PaymentRejectedOnChain';
+      if (req.decided_by === 'vault_refused') return 'PaymentRefusedByVault';
+      if (req.decided_by === 'owner') return 'PaymentRejectedByOwner';
+      return `${prefix}PaymentBlockedByRiskEngine`;
     case 'failed':
       return req.decided_by === 'rpc_error' ? 'PaymentRpcError' : 'PaymentFailedOnChain';
     default:

@@ -17,7 +17,7 @@ export const WalletButton: React.FC<{ ownerId?: string | null; testnetMode: bool
         title="Backend is in simulation mode; owner actions are simulated locally."
       >
         <Wallet className="w-3.5 h-3.5" />
-        <span>Simulation mode</span>
+        <span className="hidden sm:inline">Simulation mode</span>
       </div>
     );
   }
@@ -30,7 +30,8 @@ export const WalletButton: React.FC<{ ownerId?: string | null; testnetMode: bool
         className="flex items-center gap-2 px-3 py-1 rounded-control bg-telemetry-cyanDim/40 border border-telemetry-cyan/40 text-xs font-medium text-telemetry-cyan hover:bg-telemetry-cyanDim/60 transition-colors disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-telemetry-cyan/60"
       >
         <Wallet className="w-3.5 h-3.5" />
-        <span>{ready ? 'Connect owner wallet' : 'Loading wallets…'}</span>
+        <span className="hidden sm:inline">{ready ? 'Connect owner wallet' : 'Loading wallets…'}</span>
+        <span className="sm:hidden">{ready ? 'Connect' : '…'}</span>
       </button>
     );
   }
@@ -48,7 +49,7 @@ export const WalletButton: React.FC<{ ownerId?: string | null; testnetMode: bool
         ) : (
           <ShieldAlert className="w-3.5 h-3.5 text-caution-amber" />
         )}
-        <span className="text-text-primary">{truncate(accountId)}</span>
+        <span className="text-text-primary hidden sm:inline">{truncate(accountId)}</span>
         <span className={`font-sans ${isOwner ? 'text-confirmed-green' : 'text-caution-amber'}`}>
           {isOwner ? 'Owner' : 'Not owner'}
         </span>

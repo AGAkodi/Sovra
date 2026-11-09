@@ -156,13 +156,13 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
               <div
                 key={req.id || idx}
                 onClick={() => onSelectRequest(req)}
-                className="p-3.5 rounded-card bg-surface-secondary/70 hover:bg-surface-secondary border border-border-subtle/80 cursor-pointer transition-colors flex items-center justify-between gap-4"
+                className="p-3.5 rounded-card bg-surface-secondary/70 hover:bg-surface-secondary border border-border-subtle/80 cursor-pointer transition-colors flex items-center justify-between gap-3"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-telemetry-cyan" />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-text-primary font-medium">{req.request_id}</span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-telemetry-cyan shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-mono text-xs text-text-primary font-medium break-all">{req.request_id}</span>
                       <AuthorityPill level={req.authority_level} />
                     </div>
                     <p className="text-xs text-text-muted mt-0.5 line-clamp-1 max-w-md">
@@ -327,7 +327,7 @@ export const OverviewScreen: React.FC<OverviewScreenProps> = ({
                     <AuthorityPill level={req.authority_level} />
                   </td>
                   <td className="py-3 px-3 font-sans">
-                    <StatusBadge status={req.status} chainMode={req.chain_mode} />
+                    <StatusBadge status={req.status} chainMode={req.chain_mode} decidedBy={req.decided_by} />
                   </td>
                 </tr>
               ))}

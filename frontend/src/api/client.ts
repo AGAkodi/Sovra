@@ -14,6 +14,9 @@ export interface Vault {
   vault_balance_near: number;
   reserved_balance_near: number;
   allowed_recipients: string[];
+  /** Testnet: true when the backend could not re-read the contract and served cached state. */
+  stale?: boolean;
+  sync_error?: string;
 }
 
 export interface Agent {
@@ -41,7 +44,7 @@ export interface PaymentRequest {
   reason?: string;
   tx_hash?: string;
   chain_mode: 'testnet' | 'simulation';
-  decided_by?: 'risk_engine' | 'vault' | 'owner' | 'rpc_error';
+  decided_by?: 'risk_engine' | 'vault' | 'vault_refused' | 'owner' | 'rpc_error';
   chain_reason?: string;
   policy_version?: number;
   last_synced_at?: number;
@@ -65,6 +68,21 @@ export interface AgentProposal {
   model?: string;
   fallback_reason?: string;
   latency_ms?: number;
+  declined?: boolean;
+  decline_reason?: string;
+}
+
+/** Response of POST /scenarios/run. `declined` means the agent refused and nothing was submitted. */
+export interface ScenarioOutcome {
+  declined?: boolean;
+  requestStatus: PaymentRequest['status'] | 'declined';
+  chainMode?: 'testnet' | 'simulation';
+  decidedBy?: PaymentRequest['decided_by'];
+  message: string;
+  txHash?: string;
+  agent?: AgentProposal;
+  proposal?: { request_id: string; amount_near: number; recipient: string };
+  riskEvaluation?: { composite_risk: number; authority_level: number; authority_name: string };
 }
 
 export interface RiskEvaluation {
@@ -219,7 +237,7 @@ export const api = {
     return body;
   },
 
-  async runScenario(scenario: 'routine' | 'spike' | 'injection') {
+  async runScenario(scenario: 'routine' | 'spike' | 'injection'): Promise<ScenarioOutcome> {
     const res = await fetch(`${API_BASE}/scenarios/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

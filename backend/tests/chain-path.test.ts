@@ -132,11 +132,11 @@ describe('Testnet chain path (RPC mocked)', () => {
     expect((await agent.processTaskPayment(routineJob)).requestStatus).toBe('executing');
   });
 
-  it('records vault refusals (panics) as rejected by the vault, with the tx hash', async () => {
+  it('records vault refusals (panics) as refused by the vault, with the tx hash', async () => {
     submitMock.mockResolvedValue({ outcome: 'refused', tx_hash: 'TXF', reason: 'Vault is frozen: all agent execution suspended' });
     const r = await agent.processTaskPayment(routineJob);
     expect(r.requestStatus).toBe('rejected');
-    expect(r.decidedBy).toBe('vault');
+    expect(r.decidedBy).toBe('vault_refused');
     expect(r.txHash).toBe('TXF');
     expect(r.message).toContain('Vault is frozen');
   });

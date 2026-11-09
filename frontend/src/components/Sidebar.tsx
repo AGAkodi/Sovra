@@ -9,6 +9,7 @@ import {
   Settings,
   Lock,
   Unlock,
+  X,
 } from 'lucide-react';
 
 export type ScreenId = 'overview' | 'agent' | 'payments' | 'approvals' | 'policies' | 'audit' | 'settings';
@@ -21,6 +22,9 @@ interface SidebarProps {
   onToggleFreeze: () => void;
   /** When set, the freeze control is disabled and this explains why. */
   freezeBlockedReason?: string;
+  /** Below md the sidebar is an off-canvas drawer. */
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -30,6 +34,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isFrozen,
   onToggleFreeze,
   freezeBlockedReason,
+  mobileOpen,
+  onCloseMobile,
 }) => {
   const navItems = [
     { id: 'overview' as ScreenId, label: 'Overview', icon: LayoutDashboard },
@@ -47,11 +53,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-60 border-r border-border-subtle bg-surface-raised flex flex-col justify-between p-4 shrink-0 h-[calc(100vh-3.5rem)] sticky top-14">
+    <>
+    {mobileOpen && <div className="fixed inset-0 top-14 z-30 bg-black/60 md:hidden" onClick={onCloseMobile} aria-hidden="true" />}
+    <aside
+      id="app-sidebar"
+      className={`w-64 md:w-60 border-r border-border-subtle bg-surface-raised flex flex-col justify-between gap-4 p-4 shrink-0 overflow-y-auto
+        fixed md:sticky top-14 left-0 z-40 h-[calc(100dvh-3.5rem)] transition-transform duration-200
+        ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}
+    >
       {/* Nav List */}
       <nav className="space-y-1">
-        <div className="px-3 pb-2 text-[11px] font-medium tracking-wider text-text-muted uppercase">
-          Navigation
+        <div className="px-3 pb-2 flex items-center justify-between">
+          <span className="text-[11px] font-medium tracking-wider text-text-muted uppercase">Navigation</span>
+          <button onClick={onCloseMobile} className="md:hidden p-1 text-text-muted hover:text-text-primary" aria-label="Close menu">
+            <X className="w-4 h-4" />
+          </button>
         </div>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -59,7 +75,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => {
+                onNavigate(item.id);
+                onCloseMobile();
+              }}
+              aria-current={isActive ? 'page' : undefined}
               className={`w-full flex items-center justify-between px-3 py-2 rounded-control text-xs font-medium transition-colors ${
                 isActive
                   ? 'bg-surface-secondary text-text-primary border border-border-subtle font-semibold shadow-sm'
@@ -116,6 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {freezeBlockedReason && <p className="text-[11px] text-text-muted leading-tight">{freezeBlockedReason}</p>}
       </div>
     </aside>
+    </>
   );
 };
 

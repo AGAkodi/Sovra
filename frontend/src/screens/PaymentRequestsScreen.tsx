@@ -22,10 +22,13 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
     { id: 'executing', label: 'Executing' },
     { id: 'succeeded', label: 'Succeeded' },
     { id: 'rejected', label: 'Blocked / Rejected' },
+    { id: 'failed_expired', label: 'Failed / Expired' },
   ];
 
   const filtered = requests.filter((r) => {
-    if (filterStatus !== 'all' && r.status.toLowerCase() !== filterStatus.toLowerCase()) {
+    if (filterStatus === 'failed_expired') {
+      if (r.status !== 'failed' && r.status !== 'expired') return false;
+    } else if (filterStatus !== 'all' && r.status !== filterStatus) {
       return false;
     }
     if (searchQuery.trim() !== '') {
@@ -72,7 +75,7 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
         </div>
 
         {/* Search Input */}
-        <div className="relative min-w-[240px]">
+        <div className="relative w-full md:w-auto md:min-w-[240px]">
           <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -85,7 +88,37 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
       </div>
 
       {/* Table */}
-      <div className="p-5 rounded-panel bg-surface-raised border border-border-subtle">
+      {/* Phones: one card per request */}
+      <div className="md:hidden space-y-2">
+        {filtered.map((req) => (
+          <button
+            key={req.id}
+            onClick={() => onSelectRequest(req)}
+            className="w-full text-left p-3.5 rounded-card bg-surface-raised border border-border-subtle hover:bg-surface-secondary/60 space-y-2"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-mono text-sm font-semibold text-text-primary">{req.amount_near} NEAR</div>
+                <div className="font-mono text-[11px] text-telemetry-cyan truncate">→ {req.recipient}</div>
+              </div>
+              <StatusBadge status={req.status} chainMode={req.chain_mode} decidedBy={req.decided_by} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[11px]">
+              <AuthorityPill level={req.authority_level} />
+              <span className="font-mono text-text-muted">risk {req.risk_score}</span>
+              <span className="font-mono text-text-muted">{new Date(req.created_at).toISOString().substring(11, 19)} UTC</span>
+            </div>
+            <p className="text-[11px] text-text-muted line-clamp-2">{req.chain_reason || req.reason || req.task_evidence.prompt}</p>
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-text-muted text-xs">
+            {requests.length === 0 ? 'No payment requests yet. Run a scenario from the Overview to create one.' : 'No requests match this filter.'}
+          </div>
+        )}
+      </div>
+
+      <div className="hidden md:block p-5 rounded-panel bg-surface-raised border border-border-subtle">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -134,10 +167,10 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
                     <AuthorityPill level={req.authority_level} />
                   </td>
                   <td className="py-3 px-3 font-sans text-text-muted max-w-xs truncate text-[11px]">
-                    {req.reason || req.task_evidence.prompt}
+                    {req.chain_reason || req.reason || req.task_evidence.prompt}
                   </td>
                   <td className="py-3 px-3 font-sans">
-                    <StatusBadge status={req.status} chainMode={req.chain_mode} />
+                    <StatusBadge status={req.status} chainMode={req.chain_mode} decidedBy={req.decided_by} />
                   </td>
                 </tr>
               ))}
@@ -146,7 +179,9 @@ export const PaymentRequestsScreen: React.FC<PaymentRequestsScreenProps> = ({
 
           {filtered.length === 0 && (
             <div className="py-12 text-center text-text-muted text-xs">
-              No matching payment requests found.
+              {requests.length === 0
+              ? 'No payment requests yet. Run a scenario from the Overview to create one.'
+              : 'No requests match this filter.'}
             </div>
           )}
         </div>
