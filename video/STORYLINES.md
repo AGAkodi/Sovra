@@ -1,6 +1,6 @@
 # Sovra demo film: storylines
 
-Three different films for the same 85–90 second demo. Pick one (or a mix like "A's opening with C's ending"); it becomes `SPEC.md`, then the HyperFrames project in this folder.
+Four different films for the same 85–90 second demo. **D, grounded in real incidents, is now recommended** (script: `SCRIPT-D.md`). Pick one (or a mix like "A's opening with C's ending"); it becomes `SPEC.md`, then the HyperFrames project in this folder.
 
 **The one thing to remember:** an AI agent can pay on its own, but the money only moves when the vault says yes, and the unusual ones wait for you.
 
@@ -10,7 +10,13 @@ Three different films for the same 85–90 second demo. Pick one (or a mix like 
 
 ---
 
-## A. One invoice, three endings (recommended)
+## D. It already happened (recommended)
+
+*Three real incidents (Freysa, Nov 2024: about $47k talked out of an agent; AIXBT, Mar 2025: 55.5 ETH sent after a dashboard breach; Princeton 2025: a planted memory sent funds to an attacker), then the same kinds of attack replayed live against Sovra on testnet. Sources and the full shot script are in `SCRIPT-D.md`.*
+
+**Device:** life before and after. **Form:** object-to-object chain: each incident's key word becomes the Sovra screen that answers it. **First 2 seconds:** "Nov 2024", a persuasive chat message, a ≈$47,000 counter draining to 0, source credit in the corner. **Why recommended:** it answers "why does this exist" with real events before showing the product, and every claim has a source.
+
+## A. One invoice, three endings
 
 *A stranger follows one ordinary thing, an invoice, and sees all three outcomes in the real product.*
 
@@ -53,4 +59,4 @@ The camera travels left to right along the Agent screen's trust line, the day's 
 
 ### Recommendation
 
-**A**, because a stranger follows one invoice and sees every real screen once, so it explains the product and proves it in 90 seconds. B is the most memorable but shows less of the product. C needs the cleanest data day.
+**D**, because it starts from things that really happened and then proves the answer live. Before D, the pick was **A**, because a stranger follows one invoice and sees every real screen once, so it explains the product and proves it in 90 seconds. B is the most memorable but shows less of the product. C needs the cleanest data day.
