@@ -11,7 +11,7 @@ The UI is being rebuilt screen by screen from [design.md](../../design.md). Scre
 | `02-agent.png` | Agent | Legacy |
 | `03-payments.png` | Payments: filters with counts, search, plain-language outcomes | Rebuilt |
 | `04-evidence-drawer.png` | Payment drawer: an owner-approved 2.5 NEAR payment, why it waited, risk check, the agent's words, proof | Rebuilt |
-| `05-approvals.png` | Approvals: empty state and recent decisions (see git history for the slip with a held payment) | Rebuilt |
+| `05-approvals.png` | Approvals: a 2.5 NEAR payment held at level 5 as a slip with the countdown ring, plus recent decisions | Rebuilt |
 | `06-limits.png` | Limits (policy v2) | Legacy |
 | `07-activity.png` | Activity log | Legacy |
 | `08-mobile-home.png` | Home at 390 px | Rebuilt |
