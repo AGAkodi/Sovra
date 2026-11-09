@@ -89,6 +89,14 @@ export interface ScenarioOutcome {
   riskEvaluation?: { composite_risk: number; authority_level: number; authority_name: string };
 }
 
+export interface TrustPoint {
+  t: number;
+  trust: number;
+  delta?: number;
+  cause?: string;
+  request_id?: string;
+}
+
 export interface RiskEvaluation {
   request_id: string;
   agent_id: string;
@@ -251,6 +259,12 @@ export const api = {
       const err = await res.json();
       throw new Error(err.error || 'Scenario run failed');
     }
+    return res.json();
+  },
+
+  async getTrustHistory(days = 7, agentId = 'agent-01'): Promise<{ points: TrustPoint[]; current: number }> {
+    const res = await fetch(`${API_BASE}/agents/${agentId}/trust?days=${days}`);
+    if (!res.ok) throw new Error('Failed to fetch trust history');
     return res.json();
   },
 

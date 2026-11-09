@@ -113,6 +113,8 @@ export interface Repository {
   saveRequest(req: StoredRequest): Promise<void>;
   saveRiskEvaluation(evaluation: RiskEvaluationResult): Promise<void>;
   getRiskEvaluation(requestId: string): Promise<RiskEvaluationResult | undefined>;
+  /** Evaluations since a time, newest first (for the trust history). */
+  listRiskEvaluations(sinceMs: number, limit?: number): Promise<RiskEvaluationResult[]>;
   logAudit(eventType: string, actor: string, targetId?: string, details?: Record<string, unknown>, txHash?: string): Promise<void>;
   /** Newest first. */
   getAuditEvents(limit?: number): Promise<StoredAuditEvent[]>;

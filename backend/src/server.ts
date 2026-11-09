@@ -4,6 +4,7 @@ import cors from 'cors';
 import { RiskEngine } from './risk/engine';
 import { AttestationSigner } from './risk/attestation';
 import { AgentDeclinedError, AutonomousTaskAgent, TaskJob } from './agent/autonomous-agent';
+import { buildTrustHistory } from './agent/trust-history';
 import { DEFAULT_AGENT_ID, DEFAULT_VAULT_ID, repo, store } from './db/store';
 import { ChainUnavailableError, explorerTxUrl, getChainMode, getNearConfig } from './near/client';
 import { reconcileOpenRequests, reconcileRequest, syncVaultFromChain } from './near/sync';
@@ -138,6 +139,12 @@ app.get('/vaults/:id', h(async (req, res) => {
 // 3. Agents
 app.get('/agents', h(async (_req, res) => {
   res.json(await repo.listAgents());
+}));
+
+/** Trust over the last N days (default 7, max 30), for the Agent screen. */
+app.get('/agents/:id/trust', h(async (req, res) => {
+  const days = Math.min(30, Math.max(1, Number(req.query.days) || 7));
+  res.json(await buildTrustHistory(days));
 }));
 
 app.get('/agents/:id', h(async (req, res) => {

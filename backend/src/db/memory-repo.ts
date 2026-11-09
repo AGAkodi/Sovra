@@ -67,6 +67,13 @@ export class MemoryRepository implements Repository {
     return this.evaluations.get(requestId);
   }
 
+  async listRiskEvaluations(sinceMs: number, limit = 200) {
+    return [...this.evaluations.values()]
+      .filter((e) => e.evaluated_at >= sinceMs)
+      .sort((a, b) => b.evaluated_at - a.evaluated_at)
+      .slice(0, limit);
+  }
+
   async logAudit(eventType: string, actor: string, targetId?: string, details: Record<string, unknown> = {}, txHash?: string) {
     this.audit.unshift({ id: uuidv4(), event_type: eventType, actor, target_id: targetId, details, tx_hash: txHash, timestamp: Date.now() });
     if (this.audit.length > 500) this.audit.pop();

@@ -310,10 +310,11 @@ function Shell({ data }: { data: AppData }) {
                     agent={agent}
                     vault={vault}
                     requests={requests}
+                    events={events}
+                    agentInfo={agentInfo}
                     onRunScenario={handleRunScenario}
                     isScenarioRunning={isScenarioRunning}
-                    onSelectRequest={handleSelectRequest}
-                    agentInfo={agentInfo}
+                    scenarioRun={scenarioRun}
                   />
                 )}
 
@@ -358,7 +359,7 @@ function Shell({ data }: { data: AppData }) {
           setSelectedEvaluation(undefined);
         }}
       />
-      {currentScreen !== 'home' && <ScenarioResultCard run={scenarioRun} onClose={() => setScenarioRun(null)} />}
+      {currentScreen !== 'home' && currentScreen !== 'agent' && <ScenarioResultCard run={scenarioRun} onClose={() => setScenarioRun(null)} />}
       <TxToast />
     </div>
   );

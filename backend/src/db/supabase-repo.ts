@@ -180,6 +180,17 @@ export class SupabaseRepository implements Repository {
     return (data?.evaluation as RiskEvaluationResult | undefined) ?? undefined;
   }
 
+  async listRiskEvaluations(sinceMs: number, limit = 200) {
+    const { data, error } = await this.db
+      .from('risk_evaluations')
+      .select('evaluation')
+      .gte('evaluated_at', sinceMs)
+      .order('evaluated_at', { ascending: false })
+      .limit(limit);
+    if (error) this.fail('listRiskEvaluations', error);
+    return (data ?? []).map((r) => r.evaluation as RiskEvaluationResult);
+  }
+
   async logAudit(eventType: string, actor: string, targetId?: string, details: Record<string, unknown> = {}, txHash?: string) {
     const { error } = await this.db.from('audit_events').insert({
       event_type: eventType,
