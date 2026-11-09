@@ -12,7 +12,7 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 | **Security report** | [docs/SECURITY_TESTS.md](docs/SECURITY_TESTS.md) (20 scenarios with tx hashes) |
 | **Screenshots** | [docs/screenshots](docs/screenshots/README.md) |
 
-![Overview](docs/screenshots/01-overview.png)
+![Home](docs/screenshots/01-home.png)
 
 ---
 

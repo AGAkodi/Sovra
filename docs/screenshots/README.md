@@ -1,16 +1,18 @@
 # Dashboard screenshots
 
-Captured from the live dashboard (https://sovra-near.vercel.app) against NEAR testnet on 2026-11-09, no wallet connected.
-Regenerate with `node scripts/capture-screenshots.mjs docs/screenshots` (headless Edge).
+Captured from the live dashboard (https://sovra-near.vercel.app) against NEAR testnet, no wallet connected.
+Regenerate with `node scripts/capture-screenshots.mjs docs/screenshots` (headless Edge; `SHOTS_URL=http://localhost:5173` for a local run).
 
-| File | Screen | What it shows |
+The UI is being rebuilt screen by screen from [design.md](../../design.md). Screens marked *legacy* still use the old layout and wording inside the new palette.
+
+| File | Screen | State |
 |---|---|---|
-| `01-overview.png` | Overview | Spendable balance (total, held, storage), trust, authority level, daily budget (policy v2: 15 NEAR), recent decisions, demo scenario buttons |
-| `02-agent-monitor.png` | Agent Monitor | Trust score, six-level authority rail, behavioural baseline, LLM scenario lab (Groq gpt-oss-20b) |
-| `03-payment-requests.png` | Payment Requests | Ledger with who decided each outcome: Confirmed onchain, Owner approved · paid, Rejected onchain, Refused by vault |
-| `04-evidence-drawer.png` | Evidence drawer | The owner-approved 2.5 NEAR spike: risk factors, LLM proposal and reasoning, task evidence |
-| `05-approvals.png` | Approvals | LLM-proposed 2.5 NEAR spike held on-chain at Level 5 with the approval countdown and spendable balance |
-| `06-policy-studio.png` | Policy Studio | On-chain policy v2, wallet-signed update control, demo impact panel |
-| `07-audit-trail.png` | Audit Trail | Append-only events with testnet receipts; reconciler entries read from the vault contract |
-| `08-mobile-overview.png` | Overview (phone) | 390 px layout with menu button |
-| `09-mobile-payments.png` | Payments (phone) | Card layout with amount and status visible |
+| `01-home.png` | Home: allowance dial, available balance, trust / level / last risk, waiting banner, recent payments | Rebuilt |
+| `02-agent.png` | Agent | Legacy |
+| `03-payments.png` | Payments | Legacy |
+| `04-evidence-drawer.png` | Payment drawer | Legacy |
+| `05-approvals.png` | Approvals, with a 2.5 NEAR payment held at level 5 | Legacy |
+| `06-limits.png` | Limits (policy v2) | Legacy |
+| `07-activity.png` | Activity log | Legacy |
+| `08-mobile-home.png` | Home at 390 px | Rebuilt |
+| `09-mobile-payments.png` | Payments at 390 px | Legacy |
