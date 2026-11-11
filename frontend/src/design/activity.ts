@@ -115,6 +115,16 @@ export function describeEvent(e: AuditEvent, requestsById: Map<string, PaymentRe
       if (from === 'executing' && to === 'succeeded') return { sentence: `Receipt confirmed: ${what} arrived`, group: 'system', ink: 'positive', proof };
       return { sentence: `Status of ${what} updated from the vault: ${String(from).replace(/_/g, ' ')} to ${String(to).replace(/_/g, ' ')}`, group: 'system', ink: 'neutral', proof };
     }
+    case 'LapsedHoldReleased':
+      return { sentence: `Nobody decided on ${what} in time, so the vault released the money it was holding`, group: 'system', ink: 'neutral', proof };
+    case 'LapsedHoldReleaseFailed':
+      return {
+        sentence: `Couldn't release the money held for ${what}; you can release it from Home`,
+        detail: typeof d.reason === 'string' ? d.reason : undefined,
+        group: 'system',
+        ink: 'negative',
+        proof,
+      };
     case 'TrustUpdated': {
       const after = Number(d.trust_after);
       const delta = Number(d.delta);

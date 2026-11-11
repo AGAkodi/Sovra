@@ -22,7 +22,7 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 2. Click **Open the dashboard** (https://sovra-near.vercel.app/app). Home shows the vault's balance, read live from `sovra-vault-monarch.testnet`.
 3. On Home, under scenarios, click **Run** on **Routine invoice**. The LLM agent reads the invoice, the risk engine scores it, and the vault pays 0.3 NEAR on its own. The result card links to the testnet transaction.
 4. Click **Run** on **Hidden instructions**. The model refuses the injected invoice; the demo then submits it as a compromised agent, and the vault rejects it on-chain. 0 NEAR moves.
-5. Click **Run** on **Unusual amount**. A 2.5 NEAR request is held in **Approvals** with a one-hour countdown, waiting for the owner's wallet. (If the vault has less than 2.5 NEAR free, the card says so and nothing is held.)
+5. Click **Run** on **Unusual amount**. A 2.5 NEAR request is held in **Approvals** with a one-hour countdown, waiting for the owner's wallet. If nobody decides within the hour, the backend releases the held NEAR back to the vault with a key that can do nothing else. (If the vault has less than 2.5 NEAR free, the card says so and nothing is held.)
 6. Open **Payments** and click any payment to see why it was paid, held or stopped, the risk factors, the agent's words and the proof. **Activity** lists every event in plain sentences.
 
 Owner actions (approve, decline, freeze, limits, deposit, withdraw) need the owner's Meteor wallet, so judges see them greyed out. They are shown in the demo video and verified in [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md).
@@ -73,9 +73,9 @@ To try it: open the dashboard, run the three scenarios from **Overview**, and lo
 | Area | Status |
 |---|---|
 | Vault contract: attestation check, caps, daily budget, whitelist, freeze, hold/approve/reject/expire, withdraw, bounded event log | ✅ Deployed on testnet, 32 unit tests in CI |
-| Agent key scoped to `request_payment` only | ✅ Verified with `view_access_key_list` |
+| Agent key scoped to `request_payment` only; a second release-only key can call just `expire_request` (frees NEAR from lapsed holds) | ✅ Verified with `view_access_key_list` |
 | Adversarial checks (tampered amount/recipient/risk, forged signer, expired, stale policy, replay) | ✅ Refused on-chain, 0 NEAR moved ([report](docs/SECURITY_TESTS.md)) |
-| Risk engine v2: 5 factors, low-history prior, poisoning-resistant baseline, trust from confirmed outcomes, trust-gated levels, hysteresis | ✅ 69 backend tests |
+| Risk engine v2: 5 factors, low-history prior, poisoning-resistant baseline, trust from confirmed outcomes, trust-gated levels, hysteresis | ✅ 73 backend tests |
 | LLM agent (Groq `openai/gpt-oss-20b`), schema-checked; refusals stop the payment | ✅ Live |
 | Dashboard with owner wallet (Meteor): approve, reject, freeze, unfreeze, deposit, withdraw, release a lapsed hold, `set_policy` | ✅ Verified on testnet |
 | Persistence (Supabase, append-only audit log) and chain reconciliation | ✅ |
@@ -139,7 +139,7 @@ The backend picks its modes from the environment:
 ## Tests
 
 ```bash
-npm run test:backend          # 69 tests: risk model, chain path (mocked RPC), LLM, store, simulated end to end
+npm run test:backend          # 73 tests: risk model, chain path (mocked RPC), LLM, store, simulated end to end
 npm run typecheck             # backend + frontend
 npm run test:contract         # 32 contract tests (needs Rust; CI runs them on Linux)
 npm run adversarial           # live: sends 6 invalid requests to the testnet vault (needs testnet .env)

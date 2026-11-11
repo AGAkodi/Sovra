@@ -4,7 +4,16 @@
  */
 import { repo, store, StoredRequest, StoredVault } from '../db/store';
 import { applyTrustOutcome } from '../agent/trust';
-import { getAllowedRecipients, getNearConfig, getOnchainRequest, getVaultStatus, OnchainRequest, yoctoToNear } from './client';
+import {
+  canReleaseLapsedHolds,
+  getAllowedRecipients,
+  getNearConfig,
+  getOnchainRequest,
+  getVaultStatus,
+  OnchainRequest,
+  releaseLapsedHold,
+  yoctoToNear,
+} from './client';
 
 export function mapOnchainStatus(req: OnchainRequest, nowMs: number = Date.now()): StoredRequest['status'] {
   switch (req.status) {
@@ -61,7 +70,45 @@ export async function reconcileOpenRequests(): Promise<number> {
   for (const req of open) {
     changed += (await reconcileRequest(req)) ? 1 : 0;
   }
+  await releaseLapsedHolds();
   return changed;
+}
+
+/** Requests already released (or found not pending) by this instance; avoids paying gas twice. */
+const settledHolds = new Set<string>();
+
+/**
+ * Frees the NEAR still reserved by held requests whose approval window lapsed. The app
+ * marks them expired, but the vault keeps the reservation until someone calls
+ * expire_request. Needs the release-only key; without it the owner clicks Release.
+ */
+export async function releaseLapsedHolds(): Promise<number> {
+  if (!canReleaseLapsedHolds()) return 0;
+  const lapsed = await repo.listRequests({ chainMode: 'testnet', statuses: ['expired'], limit: 25 });
+  let released = 0;
+  for (const req of lapsed) {
+    if (settledHolds.has(req.request_id)) continue;
+    const onchain = await getOnchainRequest(req.request_id).catch(() => null);
+    const lapsedOnChain =
+      onchain?.status === 'PendingApproval' && BigInt(onchain.expiry_ns) < BigInt(Date.now()) * 1_000_000n;
+    if (!lapsedOnChain) {
+      if (onchain) settledHolds.add(req.request_id);
+      continue;
+    }
+    const result = await releaseLapsedHold(req.request_id);
+    if (result.ok) {
+      settledHolds.add(req.request_id);
+      released += 1;
+    }
+    await repo.logAudit(
+      result.ok ? 'LapsedHoldReleased' : 'LapsedHoldReleaseFailed',
+      'reconciler',
+      req.request_id,
+      { amount: req.amount_near, recipient: req.recipient, chain_mode: 'testnet', reason: result.reason },
+      result.tx_hash
+    );
+  }
+  return released;
 }
 
 export async function reconcileRequest(req: StoredRequest): Promise<boolean> {

@@ -246,6 +246,44 @@ export async function submitPaymentRequest(args: RequestPaymentArgs): Promise<Ch
   return { outcome: 'rejected', tx_hash: txHash, reason: outcome.Rejected.reason, onchain_request: onchain };
 }
 
+/** 15 TGas: expire_request only updates state and emits an event. */
+const EXPIRE_REQUEST_GAS = 15_000_000_000_000n;
+
+/**
+ * True when a release-only key is configured: a function-call key on the agent account
+ * (or RELEASER_ACCOUNT_ID) that can call nothing but expire_request on the vault.
+ */
+export function canReleaseLapsedHolds(): boolean {
+  return isSet(process.env.RELEASER_PRIVATE_KEY);
+}
+
+/**
+ * Calls expire_request so the vault frees the NEAR reserved for a held request whose
+ * approval window lapsed. The vault lets anyone call it, and it can only free funds.
+ */
+export async function releaseLapsedHold(requestId: string): Promise<{ ok: boolean; tx_hash?: string; reason?: string }> {
+  const cfg = getNearConfig();
+  const accountId = process.env.RELEASER_ACCOUNT_ID || cfg.agentAccountId;
+  try {
+    const keyStore = new nearAPI.keyStores.InMemoryKeyStore();
+    await keyStore.setKey(cfg.networkId, accountId, KeyPair.fromString(process.env.RELEASER_PRIVATE_KEY as Parameters<typeof KeyPair.fromString>[0]));
+    const near = await nearAPI.connect({ networkId: cfg.networkId, keyStore, nodeUrl: cfg.rpcUrl });
+    const account = await near.account(accountId);
+    const result = await account.signAndSendTransaction({
+      receiverId: cfg.vaultContractId,
+      actions: [transactions.functionCall('expire_request', { request_id: requestId }, EXPIRE_REQUEST_GAS, 0n)],
+      returnError: true,
+    });
+    const status = result.status as { Failure?: unknown };
+    if (status && typeof status === 'object' && status.Failure) {
+      return { ok: false, tx_hash: result.transaction_outcome.id, reason: extractFailureMessage(status.Failure) };
+    }
+    return { ok: true, tx_hash: result.transaction_outcome.id };
+  } catch (err) {
+    return { ok: false, reason: (err as Error).message };
+  }
+}
+
 export function explorerTxUrl(txHash: string): string {
   const network = getNearConfig().networkId;
   return network === 'mainnet' ? `https://nearblocks.io/txns/${txHash}` : `https://testnet.nearblocks.io/txns/${txHash}`;
