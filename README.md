@@ -16,6 +16,17 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 
 ![Home](docs/screenshots/01-home.png)
 
+## Try it in two minutes (no wallet needed)
+
+1. Open https://sovra-near.vercel.app. You see the problem, how the vault works, and a table of 9 attacks refused on testnet; each row links to its transaction.
+2. Click **Open the dashboard** (https://sovra-near.vercel.app/app). Home shows the vault's balance, read live from `sovra-vault-monarch.testnet`.
+3. On Home, under scenarios, click **Run** on **Routine invoice**. The LLM agent reads the invoice, the risk engine scores it, and the vault pays 0.3 NEAR on its own. The result card links to the testnet transaction.
+4. Click **Run** on **Hidden instructions**. The model refuses the injected invoice; the demo then submits it as a compromised agent, and the vault rejects it on-chain. 0 NEAR moves.
+5. Click **Run** on **Unusual amount**. A 2.5 NEAR request is held in **Approvals** with a one-hour countdown, waiting for the owner's wallet. (If the vault has less than 2.5 NEAR free, the card says so and nothing is held.)
+6. Open **Payments** and click any payment to see why it was paid, held or stopped, the risk factors, the agent's words and the proof. **Activity** lists every event in plain sentences.
+
+Owner actions (approve, decline, freeze, limits, deposit, withdraw) need the owner's Meteor wallet, so judges see them greyed out. They are shown in the demo video and verified in [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md).
+
 ---
 
 ## The problem
@@ -64,9 +75,9 @@ To try it: open the dashboard, run the three scenarios from **Overview**, and lo
 | Vault contract: attestation check, caps, daily budget, whitelist, freeze, hold/approve/reject/expire, withdraw, bounded event log | ✅ Deployed on testnet, 32 unit tests in CI |
 | Agent key scoped to `request_payment` only | ✅ Verified with `view_access_key_list` |
 | Adversarial checks (tampered amount/recipient/risk, forged signer, expired, stale policy, replay) | ✅ Refused on-chain, 0 NEAR moved ([report](docs/SECURITY_TESTS.md)) |
-| Risk engine v2: 5 factors, low-history prior, poisoning-resistant baseline, trust from confirmed outcomes, trust-gated levels, hysteresis | ✅ 68 backend tests |
+| Risk engine v2: 5 factors, low-history prior, poisoning-resistant baseline, trust from confirmed outcomes, trust-gated levels, hysteresis | ✅ 69 backend tests |
 | LLM agent (Groq `openai/gpt-oss-20b`), schema-checked; refusals stop the payment | ✅ Live |
-| Dashboard with owner wallet (Meteor): approve, reject, freeze, unfreeze, deposit, `set_policy` | ✅ All six verified on testnet |
+| Dashboard with owner wallet (Meteor): approve, reject, freeze, unfreeze, deposit, withdraw, release a lapsed hold, `set_policy` | ✅ Verified on testnet |
 | Persistence (Supabase, append-only audit log) and chain reconciliation | ✅ |
 | Hosting on Vercel (API as a function, daily reconcile cron) | ✅ |
 | Level 3/4 cooldowns and alerts | ⚠️ Recorded off-chain; the contract executes Levels 1–4 alike |
@@ -106,7 +117,7 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-Open http://localhost:5173 and run the scenarios from the Overview.
+Open http://localhost:5173/app and run the scenarios from Home.
 
 ### Run against testnet
 
@@ -145,6 +156,17 @@ The tests never touch testnet, Supabase or Groq: they force simulation, the in-m
 - [DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md): video script and shot list
 - [DESIGN.md](docs/DESIGN.md): design system for the landing page and dashboard
 - [IMPLEMENTATION_LOG.md](IMPLEMENTATION_LOG.md): build log with evidence
+
+## Built with
+
+Everything in this repository was written during the hackathon window (first commit 2026-11-06); there is no earlier baseline.
+
+- **Contract:** Rust, `near-sdk` 5.x, built with `cargo near`
+- **Backend:** Node.js, TypeScript, Express, `near-api-js`, `tweetnacl` (Ed25519), `zod`, `@supabase/supabase-js`, Vitest
+- **Frontend:** React, Vite, Tailwind CSS, NEAR Wallet Selector with Meteor Wallet, lucide icons; fonts Geist, Geist Mono and Instrument Serif
+- **Services:** NEAR testnet via FastNEAR RPC, Supabase (Postgres), Groq (`openai/gpt-oss-20b`) for the agent, Vercel for hosting
+- **Demo film:** HyperFrames (HTML to video), Kokoro TTS voice `af_heart`
+- **AI assistance:** much of the code, docs and the film were written with Claude Code (Anthropic), directed and reviewed by the team
 
 ## License
 
