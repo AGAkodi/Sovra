@@ -1,5 +1,5 @@
 /**
- * Throttle for NEAR: testnet deployment helper.
+ * Sovra: testnet deployment helper.
  *
  * Prints the exact near-cli-rs commands to create accounts, deploy and configure the
  * vault from your .env values. It runs nothing: every command signs with your own
@@ -47,12 +47,12 @@ const fmt = (near: number) => `${Math.round(near * 1e6) / 1e6} NEAR`;
 function findWasm(): string {
   const candidates = [
     process.env.WASM_PATH,
-    path.resolve(SCRIPT_DIR, '../contracts/throttle-vault/target/near/throttle_vault.wasm'), // cargo near build / CI artifact
-    path.resolve(SCRIPT_DIR, '../contracts/throttle-vault/target/wasm32-unknown-unknown/release/throttle_vault.wasm'),
+    path.resolve(SCRIPT_DIR, '../contracts/sovra-vault/target/near/sovra_vault.wasm'), // cargo near build / CI artifact
+    path.resolve(SCRIPT_DIR, '../contracts/sovra-vault/target/wasm32-unknown-unknown/release/sovra_vault.wasm'),
   ].filter((p): p is string => !!p);
   const found = candidates.find((p) => fs.existsSync(p));
   if (!found) {
-    console.error('No wasm found. Download the "throttle_vault-wasm" artifact from the latest CI run');
+    console.error('No wasm found. Download the "sovra_vault-wasm" artifact from the latest CI run');
     console.error('and set WASM_PATH, or run `npm run build:contract`.');
     process.exit(1);
   }
@@ -89,7 +89,7 @@ function main() {
     `near contract call-function as-transaction ${vault} ${method} json-args '${JSON.stringify(args)}' ` +
     `prepaid-gas '30.0 Tgas' attached-deposit '${deposit}' sign-as ${owner} network-config ${network} sign-with-keychain send`;
 
-  console.log(`# Throttle vault setup on ${network}  (DEMO_SCALE=${scale})`);
+  console.log(`# Sovra vault setup on ${network}  (DEMO_SCALE=${scale})`);
   console.log(`# Caps: per-tx ${fmt(perTxCap)}, daily ${fmt(dailyBudget)}`);
   console.log(`# Scenarios: routine ${fmt(3 * scale)}, spike ${fmt(25 * scale)}, injection ${fmt(80 * scale)}`);
   console.log(`# WASM: ${wasmPath} (${fs.statSync(wasmPath).size} bytes)\n`);

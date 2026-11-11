@@ -1,5 +1,5 @@
 /**
- * Deploys and configures the Throttle vault on testnet from .env, step by step.
+ * Deploys and configures the Sovra vault on testnet from .env, step by step.
  * Safe to re-run: each step checks the chain first and is skipped if already done.
  * Every transaction is signed by near-cli-rs with keys from YOUR keychain.
  *
@@ -66,11 +66,11 @@ const nearStr = (n) => `${Math.round(n * 1e6) / 1e6} NEAR`;
 function findWasm() {
   const candidates = [
     env.WASM_PATH,
-    path.join(ROOT, 'contracts/throttle-vault/target/near/throttle_vault.wasm'),
-    path.join(ROOT, 'contracts/throttle-vault/target/wasm32-unknown-unknown/release/throttle_vault.wasm'),
+    path.join(ROOT, 'contracts/sovra-vault/target/near/sovra_vault.wasm'),
+    path.join(ROOT, 'contracts/sovra-vault/target/wasm32-unknown-unknown/release/sovra_vault.wasm'),
   ].filter(Boolean);
   const found = candidates.find((p) => fs.existsSync(p));
-  if (!found) fail('No contract wasm found. Download the CI artifact "throttle_vault-wasm" and set WASM_PATH in .env.');
+  if (!found) fail('No contract wasm found. Download the CI artifact "sovra_vault-wasm" and set WASM_PATH in .env.');
   return found;
 }
 
@@ -139,7 +139,7 @@ async function main() {
   const perTxCap = 30 * scale;
   const dailyBudget = 100 * scale;
   const deposit = 20 * scale;
-  console.log(`Throttle vault setup on ${network}`);
+  console.log(`Sovra vault setup on ${network}`);
   console.log(`  vault ${vault}, owner ${owner}, agent ${agent}, recipient ${recipient}`);
   console.log(`  caps: per-tx ${nearStr(perTxCap)}, daily ${nearStr(dailyBudget)} (DEMO_SCALE=${scale})`);
 

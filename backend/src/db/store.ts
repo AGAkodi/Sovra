@@ -129,8 +129,8 @@ export class VaultCache {
   constructor() {
     const vault: StoredVault = {
       id: DEFAULT_VAULT_ID,
-      contract_id: process.env.VAULT_CONTRACT_ID || 'throttle-vault.testnet',
-      owner_id: process.env.OWNER_ACCOUNT_ID || 'throttle-owner.testnet',
+      contract_id: process.env.VAULT_CONTRACT_ID || 'sovra-vault.testnet',
+      owner_id: process.env.OWNER_ACCOUNT_ID || 'sovra-owner.testnet',
       network: 'testnet',
       is_frozen: false,
       policy_version: 1,

@@ -2177,6 +2177,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sovra-vault"
+version = "0.1.0"
+dependencies = [
+ "borsh",
+ "hex",
+ "near-sdk",
+ "serde",
+]
+
+[[package]]
 name = "spin"
 version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2330,16 +2340,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
 dependencies = [
  "num_cpus",
-]
-
-[[package]]
-name = "throttle-vault"
-version = "0.1.0"
-dependencies = [
- "borsh",
- "hex",
- "near-sdk",
- "serde",
 ]
 
 [[package]]

@@ -57,10 +57,10 @@ Paste all four lines (`POLICY_SIGNER_*`, `AGENT_*`) into `.env`. `.env` is git-i
 
 ## 4. Get the deployable wasm
 
-Download the **`throttle_vault-wasm`** artifact from the latest green CI run on GitHub (Actions → the run → Artifacts), unzip it, and set:
+Download the **`sovra_vault-wasm`** artifact from the latest green CI run on GitHub (Actions → the run → Artifacts), unzip it, and set:
 
 ```
-WASM_PATH=C:/path/to/throttle_vault.wasm
+WASM_PATH=C:/path/to/sovra_vault.wasm
 ```
 
 (This is the `cargo near build` output, the build path near-sdk recommends. A local `npm run build:contract` also works as a fallback.)

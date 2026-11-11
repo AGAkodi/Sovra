@@ -1,5 +1,5 @@
 {
-  "name": "throttle-near-monorepo",
+  "name": "sovra",
   "version": "1.0.0",
   "private": true,
   "description": "Adaptive spending-control vault for autonomous AI agents on NEAR Protocol",
@@ -8,8 +8,8 @@
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
     "test:backend": "npm --prefix backend test",
-    "test:contract": "cd contracts/throttle-vault && cargo test",
-    "build:contract": "cd contracts/throttle-vault && cargo near build non-reproducible-wasm --no-abi",
+    "test:contract": "cd contracts/sovra-vault && cargo test",
+    "build:contract": "cd contracts/sovra-vault && cargo near build non-reproducible-wasm --no-abi",
     "build:frontend": "npm --prefix frontend run build",
     "typecheck": "npm --prefix backend run typecheck && cd frontend && npx tsc --noEmit -p .",
     "adversarial": "npm --prefix backend run adversarial --",

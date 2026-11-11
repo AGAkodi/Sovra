@@ -5,7 +5,7 @@
 Every row below is backed by at least one of:
 
 - **On-chain:** a real testnet transaction (linked to NearBlocks). Refusals are failed transactions whose error is the contract's own panic message.
-- **Contract test:** a unit test in `contracts/throttle-vault/src/tests.rs` (32 tests). They pass in CI: [run 42582986234](https://github.com/AGAkodi/Sovra/actions/runs/42582986234).
+- **Contract test:** a unit test in `contracts/sovra-vault/src/tests.rs` (32 tests). They pass in CI: [run 42582986234](https://github.com/AGAkodi/Sovra/actions/runs/42582986234).
 - **Backend test:** `backend/tests/` (68 tests: risk model, chain path with mocked RPC, LLM, persistence, end to end in simulation).
 
 Rows without on-chain evidence say so.
@@ -43,7 +43,7 @@ In the adversarial run (rows 6–12), the vault's balance changed by **0 NEAR**;
 
 ```bash
 # Contract unit tests (CI runs these on every push)
-cd contracts/throttle-vault && cargo test
+cd contracts/sovra-vault && cargo test
 
 # Backend: risk model, chain path, LLM, persistence, simulated end to end (no network)
 npm --prefix backend test

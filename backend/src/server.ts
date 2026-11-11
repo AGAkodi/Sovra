@@ -376,7 +376,7 @@ app.get('/cron/reconcile', h(async (req, res) => {
 
 // Final error handler: storage or unexpected failures become safe JSON errors.
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Throttle API]', err);
+  console.error('[Sovra API]', err);
   handleError(res, err);
 });
 
@@ -384,9 +384,9 @@ export { app };
 
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`[Throttle API] Running on http://localhost:${port}`);
-    console.log(`[Throttle API] Chain mode: ${chainMode.toUpperCase()}, store: ${repo.kind.toUpperCase()}`);
-    console.log(`[Throttle Policy Signer PK] ${signer.getNearPublicKey()}${signer.isEphemeral ? ' (ephemeral)' : ''}`);
+    console.log(`[Sovra API] Running on http://localhost:${port}`);
+    console.log(`[Sovra API] Chain mode: ${chainMode.toUpperCase()}, store: ${repo.kind.toUpperCase()}`);
+    console.log(`[Sovra policy signer PK] ${signer.getNearPublicKey()}${signer.isEphemeral ? ' (ephemeral)' : ''}`);
   });
 
   if (chainMode === 'testnet') {

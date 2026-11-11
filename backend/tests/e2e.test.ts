@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { app } from '../src/server';
 import http from 'http';
 
-describe('Throttle End-to-End System Integration Tests', () => {
+describe('Sovra End-to-End System Integration Tests', () => {
   let server: http.Server;
   let baseUrl: string;
 

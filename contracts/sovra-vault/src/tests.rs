@@ -52,9 +52,9 @@ fn set_ctx_with_deposit(predecessor: AccountId, balance: NearToken, timestamp: u
     testing_env!(ctx);
 }
 
-fn setup_with(chain_id: &str, signer: Option<&str>, balance: NearToken) -> ThrottleVault {
+fn setup_with(chain_id: &str, signer: Option<&str>, balance: NearToken) -> SovraVault {
     set_ctx(owner(), balance, NOW);
-    let mut v = ThrottleVault::new(
+    let mut v = SovraVault::new(
         owner(),
         chain_id.to_string(),
         signer.map(|s| s.parse().unwrap()),
@@ -68,15 +68,15 @@ fn setup_with(chain_id: &str, signer: Option<&str>, balance: NearToken) -> Throt
     v
 }
 
-fn setup() -> ThrottleVault {
+fn setup() -> SovraVault {
     setup_with("testnet", Some(SIGNER_PK), near(100))
 }
 
-fn routine(v: &mut ThrottleVault) -> RequestOutcome {
+fn routine(v: &mut SovraVault) -> RequestOutcome {
     v.request_payment(worker(), near(3), "req-routine".into(), U64(EXPIRY), 1, 10, 1, SIG_ROUTINE.into())
 }
 
-fn spike(v: &mut ThrottleVault) -> RequestOutcome {
+fn spike(v: &mut SovraVault) -> RequestOutcome {
     v.request_payment(worker(), near(25), "req-spike".into(), U64(EXPIRY), 1, 72, 5, SIG_SPIKE.into())
 }
 

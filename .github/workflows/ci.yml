@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: contracts/throttle-vault
+        working-directory: contracts/sovra-vault
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -23,7 +23,7 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: contracts/throttle-vault
+          workspaces: contracts/sovra-vault
       - name: Unit tests
         # Failures are re-emitted as annotations so they are readable without log access.
         run: |
@@ -37,7 +37,7 @@ jobs:
       - name: Release wasm build
         run: cargo build --target wasm32-unknown-unknown --release
       - name: Wasm size
-        run: ls -l target/wasm32-unknown-unknown/release/throttle_vault.wasm
+        run: ls -l target/wasm32-unknown-unknown/release/sovra_vault.wasm
       # Deployable build via cargo-near (the build path recommended by near-sdk).
       - name: Install cargo-near
         run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
@@ -46,8 +46,8 @@ jobs:
       - name: Upload deployable wasm
         uses: actions/upload-artifact@v4
         with:
-          name: throttle_vault-wasm
-          path: contracts/throttle-vault/target/near/throttle_vault.wasm
+          name: sovra_vault-wasm
+          path: contracts/sovra-vault/target/near/sovra_vault.wasm
           if-no-files-found: error
 
   backend:

@@ -1,4 +1,4 @@
--- Throttle for NEAR: runtime schema (matches backend/src/db/supabase-repo.ts).
+-- Sovra: runtime schema (matches backend/src/db/supabase-repo.ts).
 -- Replaces the earlier draft schema, which was never applied or used.
 --
 -- Security model:

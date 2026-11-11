@@ -2,7 +2,7 @@ import nacl from 'tweetnacl';
 
 /**
  * Domain separator for signed attestations.
- * Must match ATTESTATION_DOMAIN / attestation_message() in contracts/throttle-vault/src/lib.rs.
+ * Must match ATTESTATION_DOMAIN / attestation_message() in contracts/sovra-vault/src/lib.rs.
  */
 export const ATTESTATION_DOMAIN = 'throttle-attestation-v1';
 

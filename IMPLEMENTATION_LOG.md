@@ -1,4 +1,4 @@
-# Throttle for NEAR - Implementation Log
+# Sovra: Implementation Log
 
 ## Phase 0: Orientation, Rules, and Research
 - **Timestamp**: 2026-11-06 09:10 UTC
@@ -46,7 +46,7 @@
 ## Phase 2 prep: testnet readiness (2026-11-08)
 - Contract: `expire_request`, owner `withdraw`, `get_agent_status`, `get_allowed_recipients`, 200-entry event ring buffer; 29 unit tests.
 - Backend: risk engine mirrors on-chain cap/budget/whitelist; `DEMO_SCALE` for faucet-sized amounts (same authority levels, tested); 28 tests.
-- CI builds the deployable wasm with `cargo near build non-reproducible-wasm` and uploads artifact `throttle_vault-wasm`.
+- CI builds the deployable wasm with `cargo near build non-reproducible-wasm` and uploads artifact `sovra_vault-wasm`.
 - First CI run failed in contract tests (exit 101; logs not readable without auth). Likely cause: the event-log test made 225 writes in one mocked call. Fixed by giving each call a fresh context; CI now re-emits test failures as annotations. Green run: https://github.com/AGAkodi/Sovra/actions/runs/42499569343
 - Next: account creation and deployment following `docs/TESTNET_SETUP.md` (run by the owner, signs with their keychain).
 
@@ -64,7 +64,7 @@
 - Owner action scripts added (`scripts/owner-*.cmd`) as a stopgap until the wallet UI.
 - **Owner approval** of the held 2.5 NEAR spike (via a command-line owner script, since replaced by wallet signing in the dashboard): request `req-c9278a7edd234ea9` → `Succeeded`, worker 10.3 → 12.8 NEAR; backend reconciler updated it to `succeeded` / decided by owner without intervention.
 - **Freeze**: owner froze the vault; agent routine request refused on-chain ([3Q7vjWeb…](https://testnet.nearblocks.io/txns/3Q7vjWebkxaDsPKbUhEzpg1gLhhqBn4tYYHM7tjiuczp)), no request stored, no funds moved.
-- **Bug found on testnet**: the refusal surfaced as `WebAssembly trap: unreachable`. Cause: near-sdk-env's `panic_str` uses the host `panic_utf8` only under `cfg(near)`, which `cargo near` sets and plain `cargo build` does not. Fixed with `contracts/throttle-vault/.cargo/config.toml`; contract upgraded in place via `setup-vault` (no re-init, state intact, code hash `HbFxt3GB…`). Refusal now reads "Vault is frozen: all agent execution suspended" ([DFkZbfR8…](https://testnet.nearblocks.io/txns/DFkZbfR84RyV9DEN77B7E58xgxnv3NcBzkrVvTwdCS9K)).
+- **Bug found on testnet**: the refusal surfaced as `WebAssembly trap: unreachable`. Cause: near-sdk-env's `panic_str` uses the host `panic_utf8` only under `cfg(near)`, which `cargo near` sets and plain `cargo build` does not. Fixed with `contracts/sovra-vault/.cargo/config.toml`; contract upgraded in place via `setup-vault` (no re-init, state intact, code hash `HbFxt3GB…`). Refusal now reads "Vault is frozen: all agent execution suspended" ([DFkZbfR8…](https://testnet.nearblocks.io/txns/DFkZbfR84RyV9DEN77B7E58xgxnv3NcBzkrVvTwdCS9K)).
 - **Unfreeze** → routine payment executes again ([2TVjvEoF…](https://testnet.nearblocks.io/txns/2TVjvEoFiYwVCrQnoU4kCpWT4TgE4FEBgcwXFe2Dd637)); authority now Level 2 because trust fell after the injection attempt.
 - **All six acceptance demo steps verified on testnet** (owner actions via CLI scripts; wallet UI is Day 3).
 

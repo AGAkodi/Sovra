@@ -4,7 +4,7 @@ Every screen, component and string in `frontend/` follows this file. If code and
 
 Method: [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (@heydamir), CC BY 4.0.
 
-**Status: signed off 2026-11-09.** Direction: vault room, brass. Name on screen: **Sovra** (the logo is the wordmark "Sovra" in Geist 500 with a flat brass notch glyph; "Throttle" is retired from the UI). Workflow: code-led, screenshots for review, no Figma.
+**Status: signed off 2026-11-09.** Direction: vault room, brass. Name on screen: **Sovra** (the logo is the cyan ribbon S mark next to the wordmark "Sovra" in Geist 500). Workflow: code-led, screenshots for review, no Figma.
 
 ---
 
@@ -16,7 +16,7 @@ Method: [unslop](https://github.com/heydamir/unslop) by Damir Sokolovsky (@heyda
 | **Character** | Composed, protective, exact |
 | **World** | A private bank's vault room after hours: brushed steel, a brass dial, a ledger, one warm lamp |
 | **Moments** | (1) Home: the **allowance dial**, a drawn brass gauge of today's spending against the budget, with the spendable balance set large beside it. (2) Approvals: the **held payment** shown as a cheque-like slip waiting for your signature, with a countdown ring |
-| **Signature** | The **throttle notch**: a six-step lever showing the agent's authority level (1 = free to pay, 6 = blocked), used wherever a level appears and nowhere else |
+| **Signature** | The **authority notch**: a six-step lever showing the agent's authority level (1 = free to pay, 6 = blocked), used wherever a level appears and nowhere else |
 
 **What "premium" means here.** Not glow, glass or gradients. It means:
 
@@ -145,7 +145,7 @@ Graphite ramp. Surfaces never read as blue, brown or green.
 
 ### Levels
 
-Shown with the throttle notch plus a word, never as colored pills.
+Shown with the authority notch plus a word, never as colored pills.
 
 | Level | Name | Ink |
 |---|---|---|
@@ -205,7 +205,7 @@ Minimum text size is **12px** (the current 10–11px text goes). Sentence case e
   - Destructive: `raised` with `negative` text; it only becomes filled inside the confirm sheet.
   - One primary per view.
 - **Stat:** label (13, `text-2`), figure (Geist Mono 28), and a context line (12, `text-3`), e.g. "of 15 NEAR today". No icons, no sparklines.
-- **Throttle notch** (signature): six 4×12 ticks with 2px gaps on a hairline track.
+- **authority notch** (signature): six 4×12 ticks with 2px gaps on a hairline track.
   - Ticks up to the current level are filled in that level's ink; the rest are `line`.
   - Sizes: S (rows), M (cards), L (Agent screen, with labels under each tick).
 - **Status text:** a 6px dot in the status ink plus the plain-words status from the glossary. No pill backgrounds.

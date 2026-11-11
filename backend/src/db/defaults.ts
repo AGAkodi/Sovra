@@ -8,7 +8,7 @@ export function defaultAgent(): StoredAgent {
   return {
     id: DEFAULT_AGENT_ID,
     vault_id: DEFAULT_VAULT_ID,
-    account_id: process.env.AGENT_ACCOUNT_ID || 'throttle-agent.testnet',
+    account_id: process.env.AGENT_ACCOUNT_ID || 'sovra-agent.testnet',
     name: 'Autonomous Task Paying Agent',
     trust_score: 82.5,
     authority_level: 1,

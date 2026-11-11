@@ -1,5 +1,5 @@
 /**
- * NEAR client for Throttle vault interactions.
+ * NEAR client for Sovra vault interactions.
  *
  * Two modes:
  *  - 'testnet': VAULT_CONTRACT_ID, AGENT_ACCOUNT_ID and AGENT_PRIVATE_KEY are set.
@@ -57,7 +57,7 @@ export class ChainUnavailableError extends Error {
   }
 }
 
-// ---------- Contract types (mirror contracts/throttle-vault/src/lib.rs) ----------
+// ---------- Contract types (mirror contracts/sovra-vault/src/lib.rs) ----------
 
 export type OnchainRequestStatus = 'PendingApproval' | 'Approved' | 'Executing' | 'Succeeded' | 'Failed' | 'Rejected' | 'Expired';
 

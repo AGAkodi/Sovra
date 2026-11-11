@@ -75,7 +75,7 @@ To try it: open the dashboard, run the three scenarios from **Overview**, and lo
 ## Repository
 
 ```
-contracts/throttle-vault/   Rust vault contract (near-sdk 5.x) and its unit tests
+contracts/sovra-vault/   Rust vault contract (near-sdk 5.x) and its unit tests
 backend/                    TypeScript API (Express): risk engine, attestation signer, LLM agent,
                             NEAR client, reconciler, Supabase store. Deployed as a Vercel function.
 frontend/                   React + Vite + Tailwind dashboard with NEAR Wallet Selector (Meteor)

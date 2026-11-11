@@ -3,7 +3,7 @@ import { RiskEngine, PaymentProposal, AgentHistory } from '../src/risk/engine';
 import nacl from 'tweetnacl';
 import { AttestationSigner, fromBase58, parseNearSecretKey, toBase58 } from '../src/risk/attestation';
 
-describe('Throttle Deterministic Risk Engine', () => {
+describe('Sovra Deterministic Risk Engine', () => {
   const riskEngine = new RiskEngine(['service-worker.testnet', 'oracle.testnet'], 10, 50);
 
   const baseProposal: PaymentProposal = {
@@ -125,7 +125,7 @@ describe('Throttle Deterministic Risk Engine', () => {
     const signer = new AttestationSigner();
     const payload = {
       chain_id: 'testnet',
-      vault_contract_id: 'throttle-vault.testnet',
+      vault_contract_id: 'sovra-vault.testnet',
       request_id: 'req-sig-01',
       recipient: 'service-worker.testnet',
       amount_yocto: '3000000000000000000000000',
@@ -161,7 +161,7 @@ describe('Throttle Deterministic Risk Engine', () => {
   });
 
   it('9. Attestation format matches the contract test vector byte-for-byte', () => {
-    // Same seed, message and expected signature as contracts/throttle-vault/src/tests.rs.
+    // Same seed, message and expected signature as contracts/sovra-vault/src/tests.rs.
     const signer = AttestationSigner.fromSeed(new Uint8Array(32).fill(7));
     const payload = {
       chain_id: 'testnet',

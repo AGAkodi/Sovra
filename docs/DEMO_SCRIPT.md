@@ -151,7 +151,7 @@ Add on-screen captions for each line; many viewers watch muted.
 | Meteor says the request expired | More than 1 hour passed since the spike was held | Run the spike again |
 | Banner "Backend offline" or "Chain: stale" | Temporary RPC/API issue | Wait 10 seconds; it retries automatically. If it persists, stop and retry later |
 | Result card says the agent **declined** | The LLM refused an ordinary invoice (rare) | Run the scenario again |
-| The page looks old (e.g. it says "Throttle" or "Overview") | Cached old version | Ctrl + Shift + R |
+| The page looks old (e.g. it says "Overview") | Cached old version | Ctrl + Shift + R |
 
 ---
 

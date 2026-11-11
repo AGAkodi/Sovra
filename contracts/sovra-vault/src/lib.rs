@@ -136,7 +136,7 @@ pub struct VaultStatusView {
 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
-pub struct ThrottleVault {
+pub struct SovraVault {
     pub owner_id: AccountId,
     /// Network the vault lives on ("testnet"); bound into every attestation so a
     /// signature for one network cannot be replayed on another.
@@ -196,7 +196,7 @@ fn is_valid_request_id(id: &str) -> bool {
 }
 
 #[near]
-impl ThrottleVault {
+impl SovraVault {
     #[init]
     pub fn new(
         owner_id: AccountId,
