@@ -127,7 +127,7 @@ The backend picks its modes from the environment:
 ## Tests
 
 ```bash
-npm run test:backend          # 68 tests: risk model, chain path (mocked RPC), LLM, store, simulated end to end
+npm run test:backend          # 69 tests: risk model, chain path (mocked RPC), LLM, store, simulated end to end
 npm run typecheck             # backend + frontend
 npm run test:contract         # 32 contract tests (needs Rust; CI runs them on Linux)
 npm run adversarial           # live: sends 6 invalid requests to the testnet vault (needs testnet .env)
