@@ -6,6 +6,7 @@ NEAR Hackathon 2026, AI Security & Defense track. Everything below runs on **NEA
 
 | | |
 |---|---|
+| **Demo video** | [youtu.be/5EWJygLu8WI](https://youtu.be/5EWJygLu8WI) (1:41) |
 | **Website** | https://sovra-near.vercel.app |
 | **Dashboard** | https://sovra-near.vercel.app/app |
 | **API** | https://throttle-api-mauve.vercel.app/health |
