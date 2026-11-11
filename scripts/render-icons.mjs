@@ -59,7 +59,7 @@ try {
     await render(out, 512, { pad: 0.12 });
   } else {
     await render(path.join(PUBLIC, 'apple-touch-icon.png'), 180, { radius: 0, pad: 0.16 });
-    await render(path.join(PUBLIC, 'favicon-32.png'), 32, { pad: 0.08 });
+    await render(path.join(PUBLIC, 'favicon-32.png'), 32, { pad: 0.02, transparent: true }); // same as the logo, no tile
     await render(path.join(PUBLIC, 'icon-192.png'), 192, { pad: 0.16 });
     await render(path.join(PUBLIC, 'icon-512.png'), 512, { pad: 0.16 });
   }
